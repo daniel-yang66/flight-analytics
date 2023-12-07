@@ -4,3 +4,4 @@ datetime
 dash_bootstrap_components
 dash_bootstrap_templates
 requests
+gunicorn
