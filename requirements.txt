@@ -1,7 +1,6 @@
 dash==2.14.2
+FlightRadarAPI==1.3.12
 pandas
-datetime
 dash_bootstrap_components
 dash_bootstrap_templates
-requests
 gunicorn
