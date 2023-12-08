@@ -65,14 +65,14 @@ def view_stats(dep, clicks):
     arr = pd.DataFrame(airport['airport']['pluginData']['details']['stats']['arrivals']['today']['quantity'], 
                       index = [0])
     figure = px.pie(dep, 
-                    values=sorted([int(dep['onTime']), int(dep['delayed']), int(dep['canceled'])]), 
+                    values=[int(dep['onTime']), int(dep['delayed']), int(dep['canceled'])], 
                     names= ['On Time','Delayed','Canceled'], 
                     hole = 0.7,
                    title = 'Departure Performance')
 
 
     figure2 = px.pie(arr, 
-                    values=sorted([int(arr['onTime']), int(arr['delayed']), int(arr['canceled'])]), 
+                    values=[int(arr['onTime']), int(arr['delayed']), int(arr['canceled'])], 
                     names= ['On Time','Delayed','Canceled'], 
                     hole = 0.7,
                     title = 'Arrival Performance')
