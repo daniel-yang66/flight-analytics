@@ -19,8 +19,8 @@ app.layout = dbc.Container([
     html.H2(id='title', children="AeroStat", 
             style = {'margin-left':460,'font-weight':'bold','font-size':40, 'font-family':'sans-serif'}),
     
-        dbc.Row(dcc.Link('Powered by aviationstack',href = 'https://aviationstack.com/',
-                         style = {'font-size':16,'margin-bottom':12, 'margin-left':460})),
+        dbc.Row(html.P("Today's Flight Performance",
+                         style = {'font-size':16,'margin-bottom':12, 'margin-left':450})),
     
     dbc.Row([
         dbc.Row([
