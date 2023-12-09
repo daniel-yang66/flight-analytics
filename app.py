@@ -167,7 +167,7 @@ def view_stats(dep, clicks):
     figure3 = px.bar(market.groupby(['Carrier','Delay Status']).count().reset_index(), 
                      x='Carrier', 
                      y='Count',
-                    title = 'Live Aircraft by Airline',
+                    title = 'Live Departure/Departed Metrics',
                     color = 'Delay Status',
                     color_discrete_map = {
                         'green':'green',
