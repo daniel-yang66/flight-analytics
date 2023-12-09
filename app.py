@@ -65,7 +65,8 @@ app.layout = dbc.Container([
         html.Button('View Stats', id='submit2', 
                     style = {'margin-bottom':10,'width':300, 'margin-left':420,'border-radius':30,'background-color':'green','color':'white'}), style = {'text-align':'center'}),
             
-            dcc.Graph(id='flights')
+            dcc.Graph(id='bar'),
+            dcc.Graph(id='hist')
         ],
                 style = {'width':200,'background-color':'green', 'border':'white','border-radius':20,'margin-bottom':15}, 
                 selected_style = {'width':200, 'border':'white solid 3px','border-radius':20,'background-color':'red','margin-bottom':15})
@@ -109,7 +110,8 @@ def view_stats(dep, clicks):
     return clicks, figure, figure2
 
 @app.callback(Output("submit2", "n_clicks"),
-              Output('flights','figure'),
+              Output('bar','figure'),
+              Output('hist','figure'),
               Input('airline','value'),
               Input('submit2','n_clicks'))
 
@@ -130,17 +132,20 @@ def view_stats2(company, clicks):
     
     all_flights = fr_api.get_flights(airline = list(carrier)[0]['ICAO'])
     
-    lst2 = []
+    aircraft = []
+    alt = []
     for a in all_flights:
-        lst2.append(str(a)[2:6])
-    ac = pd.DataFrame(lst2,columns=['Aircraft'])
+        aircraft.append(str(a)[2:6])
+        alt.append(int(str(a)[str(a).index('Altitude') + 10 : str(a).index('Ground Speed') - 3 ]))
+    ac = pd.DataFrame(list(zip(aircraft,alt)),columns=['Aircraft','Altitude'])
     ac['Count'] = 1
     
     figure = px.bar(ac.groupby('Aircraft').count().reset_index().sort_values(by='Count',ascending=False), 
                         x='Aircraft',
                         y='Count', 
                         title='Active Aircraft').update_traces(marker_color='green')
-    return clicks, figure
+    figure2 = px.histogram(ac, x='Altitude', title = 'Altitude Distribution').update_traces(marker_color='green')
+    return clicks, figure, figure2
     
 
 if __name__ == '__main__':
