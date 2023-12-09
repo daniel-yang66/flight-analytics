@@ -34,7 +34,7 @@ app.layout = dbc.Container([
         
         dbc.Row(
         html.Button('View Stats', id='submit', 
-                    style = {'margin-bottom':10,'width':300, 'margin-left':420,'border-radius':30,'background-color':'green','color':'white'}), style = {'text-align':'center'}),
+                    style = {'margin-bottom':12,'width':300, 'margin-left':420,'border-radius':30,'background-color':'green','color':'white'}), style = {'text-align':'center'}),
         dbc.Row([
         dbc.Col([
             dcc.Graph(id='pie')
@@ -65,14 +65,22 @@ app.layout = dbc.Container([
             
             dbc.Row(
         html.Button('View Stats', id='submit2', 
-                    style = {'margin-bottom':10,'width':300, 'margin-left':420,'border-radius':30,'background-color':'green','color':'white'}), style = {'text-align':'center'}),
+                    style = {'margin-bottom':12,'width':300, 'margin-left':420,'border-radius':30,'background-color':'green','color':'white'}), style = {'text-align':'center'}),
             
             dcc.Graph(id='bar'),
             dcc.Graph(id='hist')
         ],
                 style = {'width':200,'background-color':'green', 'border':'white','border-radius':20,'margin-bottom':15}, 
                 selected_style = {'width':200, 'border':'white solid 3px','border-radius':20,'background-color':'red','margin-bottom':15})
-])
+]),
+    dbc.Row([
+        dbc.Col(
+    html.Footer('Copyright'), width = 1),
+        dbc.Col(
+        dcc.Link(children = 'Daniel Yang',
+                 href = 'https://www.linkedin.com/in/daniel-yang-a17ab3229/', 
+                 target = '_blank', style = {'margin-left': -15}))
+    ], style = {'margin-bottom':12,'margin-top':12,'margin-left':-22})
     ])
 
 @app.callback(Output("submit", "n_clicks"),
@@ -90,45 +98,83 @@ def view_stats(dep, clicks):
     fr_api = FlightRadar24API()
     airport = fr_api.get_airport_details(dep.upper())
     
-    depart = pd.DataFrame(airport['airport']['pluginData']['details']['stats']['departures']['recent']['quantity'], 
+    dep_metric = pd.DataFrame(airport['airport']['pluginData']['details']['stats']['departures']['recent']['quantity'], 
                       index = [0])
-    arrive = pd.DataFrame(airport['airport']['pluginData']['details']['stats']['arrivals']['recent']['quantity'], 
-                      index = [0])
-    figure = px.pie(depart, 
-                    values=[int(depart['onTime']), int(depart['delayed']), int(depart['canceled'])], 
-                    names= ['On Time','Delayed','Canceled'], 
-                    hole = 0.7,
-                    title = 'Departure Performance')
-
-
-    figure2 = px.pie(arrive, 
-                    values=[int(arrive['onTime']), int(arrive['delayed']), int(arrive['canceled'])], 
-                    names= ['On Time','Delayed','Canceled'], 
-                    hole = 0.7,
-                    title = 'Arrival Performance')
     
-    carrier_lst = []
+    depart = pd.DataFrame(list(['On Time']*int(dep_metric['onTime']) 
+                               + ['Delayed']*int(dep_metric['delayed'])
+                              + ['Canceled']*int(dep_metric['canceled'])), columns = ['Status'])
+    depart['Count'] = 1
+    
+    arr_metric= pd.DataFrame(airport['airport']['pluginData']['details']['stats']['arrivals']['recent']['quantity'], 
+                      index = [0])
+    
+    arrive = pd.DataFrame(list(['On Time']*int(arr_metric['onTime']) 
+                               + ['Delayed']*int(arr_metric['delayed'])
+                              + ['Canceled']*int(arr_metric['canceled'])), columns = ['Status'])
+    arrive['Count'] = 1
+    
+    
+    figure = px.pie(depart.groupby('Status').count().reset_index(), 
+                    values = 'Count', 
+                    names = 'Status' , 
+                    hole = 0.7,
+                    title = 'Departure Metrics',
+                   color = 'Status',
+                   color_discrete_map = {
+                       'On Time':'green',
+                       'Delayed':'yellow',
+                       'Canceled':'red'
+                   })
+
+
+    figure2 = px.pie(arrive.groupby('Status').count().reset_index(), 
+                    values = 'Count' , 
+                    names = 'Status', 
+                    hole = 0.7,
+                    title = 'Arrival Metrics',
+                    color = 'Status',
+                    color_discrete_map = {
+                       'On Time':'green',
+                       'Delayed':'yellow',
+                       'Canceled':'red'
+                   })
+    
+    carrier = []
+    delay_status = []
     
     total_pages = airport['airport']['pluginData']['schedule']['departures']['page']['total']
     
     for page in range(0,total_pages+1):
-        airfield = fr_api.get_airport_details(dep.upper().strip(), page = page)
+        
+        all_ac = fr_api.get_airport_details(dep.upper().strip(), page = page)['airport']['pluginData']['schedule']['departures']['data']
+        
+        live_ac = filter(lambda x: x['flight']['status']['live'] == True, all_ac)
 
-        for flight in airfield['airport']['pluginData']['schedule']['departures']['data']:
+        for flight in live_ac:
             
-            if flight['flight']['airline']!=None and flight['flight']['status']['live'] == True:
-                carrier_lst.append(flight['flight']['airline']['short'])
+            if flight['flight']['airline']:
+                carrier.append(flight['flight']['airline']['short'])
+                delay_status.append(flight['flight']['status']['icon'])
                 
-            elif flight['flight']['status']['live']==True and flight['flight']['airline'] == None :
-                carrier_lst.append('N/A')
+            else:
+                carrier.append('N/A')
+                delay_status.append('N/A')
                 
-    market = pd.DataFrame(carrier_lst,columns=['Carrier'])
+    market = pd.DataFrame(list(zip(carrier,delay_status)),columns=['Carrier','Delay Status'])
     market['Count'] = 1
     
-    figure3 = px.bar(market.groupby('Carrier').count().reset_index(), 
+    figure3 = px.bar(market.groupby(['Carrier','Delay Status']).count().reset_index(), 
                      x='Carrier', 
                      y='Count',
-                    title = 'Live Aircraft by Airline').update_traces(marker_color='green')
+                    title = 'Live Aircraft by Airline',
+                    color = 'Delay Status',
+                    color_discrete_map = {
+                        'green':'green',
+                        'yellow':'yellow',
+                        'red':'red',
+                        'N/A':'gray'
+                    })
     
     
     clicks = None
@@ -153,7 +199,9 @@ def view_stats2(company, clicks):
     for w in words:
         new_word = w.title()
         lst.append(new_word)
+        
     final_name = ' '.join(lst)
+    
     carrier = filter(lambda x: x['Name'] == final_name,all_carriers)
     
     all_flights = fr_api.get_flights(airline = list(carrier)[0]['ICAO'])
@@ -170,7 +218,9 @@ def view_stats2(company, clicks):
                         x='Aircraft',
                         y='Count', 
                         title='Active Aircraft').update_traces(marker_color='green')
+    
     figure2 = px.histogram(ac, x='Altitude', title = 'Altitude Distribution').update_traces(marker_color='green')
+    
     return clicks, figure, figure2
     
 
