@@ -41,7 +41,9 @@ app.layout = dbc.Container([
         ]),
         dbc.Col(dbc.Row(
             dcc.Graph(id='pie2')),
-        )])
+        ),
+            dcc.Graph(id='bar2')
+        ])
             
         ])
         
@@ -76,6 +78,7 @@ app.layout = dbc.Container([
 @app.callback(Output("submit", "n_clicks"),
               Output('pie','figure'),
               Output('pie2','figure'),
+              Output('bar2','figure'),
               Input('dep','value'),
               Input('submit','n_clicks'))
 
@@ -87,27 +90,50 @@ def view_stats(dep, clicks):
     fr_api = FlightRadar24API()
     airport = fr_api.get_airport_details(dep.upper())
     
-    dep = pd.DataFrame(airport['airport']['pluginData']['details']['stats']['departures']['recent']['quantity'], 
+    depart = pd.DataFrame(airport['airport']['pluginData']['details']['stats']['departures']['recent']['quantity'], 
                       index = [0])
-    arr = pd.DataFrame(airport['airport']['pluginData']['details']['stats']['arrivals']['recent']['quantity'], 
+    arrive = pd.DataFrame(airport['airport']['pluginData']['details']['stats']['arrivals']['recent']['quantity'], 
                       index = [0])
-    figure = px.pie(dep, 
-                    values=[int(dep['onTime']), int(dep['delayed']), int(dep['canceled'])], 
+    figure = px.pie(depart, 
+                    values=[int(depart['onTime']), int(depart['delayed']), int(depart['canceled'])], 
                     names= ['On Time','Delayed','Canceled'], 
                     hole = 0.7,
                     title = 'Departure Performance')
 
 
-    figure2 = px.pie(arr, 
-                    values=[int(arr['onTime']), int(arr['delayed']), int(arr['canceled'])], 
+    figure2 = px.pie(arrive, 
+                    values=[int(arrive['onTime']), int(arrive['delayed']), int(arrive['canceled'])], 
                     names= ['On Time','Delayed','Canceled'], 
                     hole = 0.7,
                     title = 'Arrival Performance')
     
+    carrier_lst = []
+    
+    total_pages = airport['airport']['pluginData']['schedule']['departures']['page']['total']
+    
+    for page in range(0,total_pages+1):
+        airfield = fr_api.get_airport_details(dep.upper().strip(), page = page)
+
+        for flight in airfield['airport']['pluginData']['schedule']['departures']['data']:
+            
+            if flight['flight']['airline']!=None and flight['flight']['status']['live'] == True:
+                carrier_lst.append(flight['flight']['airline']['short'])
+                
+            elif flight['flight']['status']['live']==True and flight['flight']['airline'] == None :
+                carrier_lst.append('N/A')
+                
+    market = pd.DataFrame(carrier_lst,columns=['Carrier'])
+    market['Count'] = 1
+    
+    figure3 = px.bar(market.groupby('Carrier').count().reset_index(), 
+                     x='Carrier', 
+                     y='Count',
+                    title = 'Live Aircraft by Airline').update_traces(marker_color='green')
+    
     
     clicks = None
     
-    return clicks, figure, figure2
+    return clicks, figure, figure2, figure3
 
 @app.callback(Output("submit2", "n_clicks"),
               Output('bar','figure'),
