@@ -42,7 +42,8 @@ app.layout = dbc.Container([
         dbc.Col(dbc.Row(
             dcc.Graph(id='pie2')),
         ),
-            dcc.Graph(id='bar2')
+            dcc.Graph(id='bar2'),
+            dcc.Graph(id='map')
         ])
             
         ])
@@ -87,6 +88,7 @@ app.layout = dbc.Container([
               Output('pie','figure'),
               Output('pie2','figure'),
               Output('bar2','figure'),
+              Output('map','figure'),
               Input('dep','value'),
               Input('submit','n_clicks'))
 
@@ -142,6 +144,9 @@ def view_stats(dep, clicks):
     
     carrier = []
     delay_status = []
+    lat = []
+    lon = []
+    name = []
     
     total_pages = airport['airport']['pluginData']['schedule']['departures']['page']['total']
     
@@ -156,12 +161,16 @@ def view_stats(dep, clicks):
             if flight['flight']['airline']:
                 carrier.append(flight['flight']['airline']['short'])
                 delay_status.append(flight['flight']['status']['icon'])
+                lat.append(flight['flight']['airport']['destination']['position']['latitude'])
+                lon.append(flight['flight']['airport']['destination']['position']['longitude'])
+                name.append(flight['flight']['airport']['destination']['code']['iata'])
                 
             else:
                 carrier.append('N/A')
                 delay_status.append('N/A')
                 
-    market = pd.DataFrame(list(zip(carrier,delay_status)),columns=['Carrier','Delay Status'])
+    market = pd.DataFrame(list(zip(carrier,delay_status,lat,lon,name)),
+                          columns=['Carrier','Delay Status','Lat','Lon','Code'])
     market['Count'] = 1
     
     figure3 = px.bar(market.groupby(['Carrier','Delay Status']).count().reset_index(), 
@@ -176,10 +185,22 @@ def view_stats(dep, clicks):
                         'N/A':'gray'
                     })
     
+    figure4 = px.scatter_mapbox(market.groupby(['Code','Lat','Lon']).count().reset_index(), 
+                                lat = 'Lat',
+                                lon = 'Lon',
+                                color = 'Count',
+                                zoom = 1, 
+                                hover_name = 'Code',
+                                mapbox_style="stamen-watercolor",
+                                color_continuous_scale = px.colors.sequential.Tealgrn,
+                                title = 'Destinations of Live Aircraft'
+                               ).update_layout(mapbox_style="dark", 
+                                            mapbox_accesstoken='pk.eyJ1IjoiZGFuaWVseWFuZzc4NyIsImEiOiJjbHB6d3E1Y2IxNnF2MmpwcHRnbnVxZm94In0.D9wJEwgIDAr-V2EN5zDTJw')
+    
     
     clicks = None
     
-    return clicks, figure, figure2, figure3
+    return clicks, figure, figure2, figure3, figure4
 
 @app.callback(Output("submit2", "n_clicks"),
               Output('bar','figure'),
@@ -222,7 +243,7 @@ def view_stats2(company, clicks):
     
 
 if __name__ == '__main__':
-    app.run_server(debug = False)
+    app.run_server(debug=False)
 
 
 
