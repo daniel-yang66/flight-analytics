@@ -96,7 +96,7 @@ def view_stats(dep, clicks):
         
 
     fr_api = FlightRadar24API()
-    airport = fr_api.get_airport_details(dep.upper())
+    airport = fr_api.get_airport_details(dep.upper().strip())
     
     dep_metric = pd.DataFrame(airport['airport']['pluginData']['details']['stats']['departures']['recent']['quantity'], 
                       index = [0])
@@ -193,16 +193,10 @@ def view_stats2(company, clicks):
         raise PreventUpdate
         
     fr_api = FlightRadar24API()
-    all_carriers = fr_api.get_airlines()
-    lst = []
-    words = company.split(' ')
-    for w in words:
-        new_word = w.title()
-        lst.append(new_word)
-        
-    final_name = ' '.join(lst)
     
-    carrier = filter(lambda x: x['Name'] == final_name,all_carriers)
+    all_carriers = fr_api.get_airlines()
+    
+    carrier = filter(lambda x: x['Name'].lower() == company.lower().strip(),all_carriers)
     
     all_flights = fr_api.get_flights(airline = list(carrier)[0]['ICAO'])
     
@@ -211,6 +205,7 @@ def view_stats2(company, clicks):
     for a in all_flights:
         aircraft.append(str(a)[2:6])
         alt.append(int(str(a)[str(a).index('Altitude') + 10 : str(a).index('Ground Speed') - 3 ]))
+        
     ac = pd.DataFrame(list(zip(aircraft,alt)),columns=['Aircraft','Altitude'])
     ac['Count'] = 1
     
@@ -219,13 +214,15 @@ def view_stats2(company, clicks):
                         y='Count', 
                         title='Active Aircraft').update_traces(marker_color='green')
     
-    figure2 = px.histogram(ac, x='Altitude', title = 'Altitude Distribution').update_traces(marker_color='green')
+    figure2 = px.histogram(ac, x='Altitude', 
+                           title = 'Altitude Distribution'
+                           ).update_traces(marker_color='green')
     
     return clicks, figure, figure2
     
 
 if __name__ == '__main__':
-    app.run_server(debug=False)
+    app.run_server(debug = False)
 
 
 
