@@ -25,16 +25,13 @@ app.layout = dbc.Container([
             dbc.Row([
         dbc.Row([
         
-        html.H3('Enter Airport:', 
-                style={'margin-left':-3,'margin-bottom':15, 'font-size':25, 'font-family':'sans-serif','font-weight':'bold'}),
-            
         dcc.Input(id='dep',type='text', placeholder='Airport IATA', 
                   style = {'text-align':'center','border-radius': 10,'width':200,'margin-bottom':17,'margin-left':460})], 
             style = {'text-align':'center'}),
         
         dbc.Row(
         html.Button('View Stats', id='submit', 
-                    style = {'margin-bottom':12,'width':300, 'margin-left':420,'border-radius':30,'background-color':'green','color':'white'}), style = {'text-align':'center'}),
+                    style = {'margin-bottom':12,'width':200, 'margin-left':460,'border-radius':30,'background-color':'green','color':'white'}), style = {'text-align':'center'}),
         dbc.Row([
         dbc.Col([
             dcc.Graph(id='pie')
@@ -51,28 +48,25 @@ app.layout = dbc.Container([
     
 ],
     style = {'width':200, 'background-color':'green', 'margin-left':370, 'border':'white','border-radius':20,'margin-bottom':15}, 
-    selected_style = {'width':200,'margin-left':370, 'background-color':'red', 'border':'white solid 3px','border-radius':20,'margin-bottom':15}),
+    selected_style = {'width':200,'margin-left':370, 'background-color':'lightblue', 'border':'white solid 3px','border-radius':20,'margin-bottom':15}),
         
         dcc.Tab(label = 'Airline Stats', id='Tab 2' ,children=[
             
             dbc.Row([
         
-        html.H3('Enter Airline:', 
-                style={'margin-left':-3,'margin-bottom':15, 'font-size':25, 'font-family':'sans-serif','font-weight':'bold'}),
-            
         dcc.Input(id='airline',type='text', placeholder='Airline Name', 
                   style = {'text-align':'center','border-radius': 10,'width':200,'margin-bottom':17,'margin-left':460})], 
             style = {'text-align':'center'}),
             
             dbc.Row(
         html.Button('View Stats', id='submit2', 
-                    style = {'margin-bottom':12,'width':300, 'margin-left':420,'border-radius':30,'background-color':'green','color':'white'}), style = {'text-align':'center'}),
+                    style = {'margin-bottom':12,'width':200, 'margin-left':460,'border-radius':30,'background-color':'green','color':'white'}), style = {'text-align':'center'}),
             
             dcc.Graph(id='bar'),
             dcc.Graph(id='hist')
         ],
                 style = {'width':200,'background-color':'green', 'border':'white','border-radius':20,'margin-bottom':15}, 
-                selected_style = {'width':200, 'border':'white solid 3px','border-radius':20,'background-color':'red','margin-bottom':15})
+                selected_style = {'width':200, 'border':'white solid 3px','border-radius':20,'background-color':'lightblue','margin-bottom':15})
 ]),
     dbc.Row([
         dbc.Col(
@@ -176,7 +170,7 @@ def view_stats(dep, clicks):
     figure3 = px.bar(market.groupby(['Carrier','Delay Status']).count().reset_index(), 
                      x='Carrier', 
                      y='Count',
-                    title = 'Live Departure/Departed Metrics',
+                    title = f'Flights Departing/Departed {dep.upper()}',
                     color = 'Delay Status',
                     color_discrete_map = {
                         'green':'green',
@@ -191,9 +185,8 @@ def view_stats(dep, clicks):
                                 color = 'Count',
                                 zoom = 1, 
                                 hover_name = 'Code',
-                                mapbox_style="stamen-watercolor",
                                 color_continuous_scale = px.colors.sequential.Tealgrn,
-                                title = 'Destinations of Live Aircraft'
+                                title = f'{dep.upper()} Destinations (Live Aircraft)'
                                ).update_layout(mapbox_style="dark", 
                                             mapbox_accesstoken='pk.eyJ1IjoiZGFuaWVseWFuZzc4NyIsImEiOiJjbHB6d3E1Y2IxNnF2MmpwcHRnbnVxZm94In0.D9wJEwgIDAr-V2EN5zDTJw')
     
@@ -243,7 +236,7 @@ def view_stats2(company, clicks):
     
 
 if __name__ == '__main__':
-    app.run_server(debug=False)
+    app.run_server(debug = False)
 
 
 
