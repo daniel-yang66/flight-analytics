@@ -34,7 +34,7 @@ app.layout = dbc.Container([
             dbc.Row([
         dbc.Row([
         
-        dcc.Input(id='dep',type='text', placeholder='Airport IATA', 
+        dcc.Input(id='dep',type='text', placeholder='Airport IATA (ex. SFO)', 
                   style = {'text-align':'center','border-radius': 10,'width':200,'margin-bottom':17,'margin-left':460})], 
             style = {'text-align':'center'}),
         
@@ -63,7 +63,7 @@ app.layout = dbc.Container([
             
             dbc.Row([
         
-        dcc.Input(id='airline',type='text', placeholder='Airline Name', 
+        dcc.Input(id='airline',type='text', placeholder='Airline Full Name', 
                   style = {'text-align':'center','border-radius': 10,'width':200,'margin-bottom':17,'margin-left':460})], 
             style = {'text-align':'center'}),
             
@@ -236,11 +236,13 @@ def view_stats2(company, clicks):
     figure = px.bar(ac.groupby('Aircraft').count().reset_index().sort_values(by='Count',ascending=False), 
                         x='Aircraft',
                         y='Count', 
-                        title='Active Aircraft').update_traces(marker_color='green')
+                        title='Live Aircraft').update_traces(marker_color='green')
     
     figure2 = px.histogram(ac, x='Altitude', 
                            title = 'Altitude Distribution'
                            ).update_traces(marker_color='green')
+
+    clicks = None
     
     return clicks, figure, figure2
     
