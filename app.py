@@ -8,11 +8,20 @@ from dash_bootstrap_templates import load_figure_template
 
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 
 app = Dash(__name__, external_stylesheets = [dbc.themes.DARKLY])
 server = app.server
 
 load_figure_template('slate')
+
+def blank_figure():
+    fig = go.Figure(go.Scatter(x=[], y = []))
+    fig.update_layout(template = None, plot_bgcolor='#454545', paper_bgcolor = '#454545')
+    fig.update_xaxes(showgrid = False, showticklabels = False, zeroline=False)
+    fig.update_yaxes(showgrid = False, showticklabels = False, zeroline=False)
+    
+    return fig
 
 app.layout = dbc.Container([
     html.H2(id='title', children="AeroStat", 
@@ -34,13 +43,13 @@ app.layout = dbc.Container([
                     style = {'margin-bottom':12,'width':200, 'margin-left':460,'border-radius':30,'background-color':'green','color':'white'}), style = {'text-align':'center'}),
         dbc.Row([
         dbc.Col([
-            dcc.Graph(id='pie')
+            dcc.Graph(id='pie', figure = blank_figure() )
         ]),
         dbc.Col(dbc.Row(
-            dcc.Graph(id='pie2')),
+            dcc.Graph(id='pie2', figure = blank_figure() )),
         ),
-            dcc.Graph(id='bar2'),
-            dcc.Graph(id='map')
+            dcc.Graph(id='bar2', figure = blank_figure() ),
+            dcc.Graph(id='map', figure = blank_figure() )
         ])
             
         ])
@@ -59,11 +68,12 @@ app.layout = dbc.Container([
             style = {'text-align':'center'}),
             
             dbc.Row(
-        html.Button('View Stats', id='submit2', 
+        html.Button('View Stats', 
+                    id='submit2', 
                     style = {'margin-bottom':12,'width':200, 'margin-left':460,'border-radius':30,'background-color':'green','color':'white'}), style = {'text-align':'center'}),
             
-            dcc.Graph(id='bar'),
-            dcc.Graph(id='hist')
+            dcc.Graph(id='bar', figure = blank_figure()),
+            dcc.Graph(id='hist', figure = blank_figure())
         ],
                 style = {'width':200,'background-color':'green', 'border':'white','border-radius':20,'margin-bottom':15}, 
                 selected_style = {'width':200, 'border':'white solid 3px','border-radius':20,'background-color':'lightblue','margin-bottom':15})
