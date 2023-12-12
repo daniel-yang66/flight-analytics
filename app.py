@@ -166,13 +166,18 @@ def view_stats(dep, metric, clicks):
     fr_api = FlightRadar24API()
     airport = fr_api.get_airport_details(dep.upper().strip())
     
-    metrics = pd.DataFrame(airport['airport']['pluginData']['details']['stats'][metric]['recent']['quantity'], 
-                      index = [0])
+    if airport['airport']['pluginData']['details']['stats']:
     
-    flights = pd.DataFrame(list(['On Time']*int(metrics['onTime']) 
-                               + ['Delayed']*int(metrics['delayed'])
-                              + ['Canceled']*int(metrics['canceled'])), columns = ['Status'])
-    flights['Count'] = 1
+        metrics = pd.DataFrame(airport['airport']['pluginData']['details']['stats'][metric]['recent']['quantity'], 
+                          index = [0])
+    
+        flights = pd.DataFrame(list(['On Time']*int(metrics['onTime']) 
+                                   + ['Delayed']*int(metrics['delayed'])
+                                  + ['Canceled']*int(metrics['canceled'])), columns = ['Status'])
+        flights['Count'] = 1
+    else:
+        flights = pd.DataFrame(list(['N/A']),columns = ['Status'])
+        flights['Count'] = '0'
     
     airport_type = 'destination'
     if metric == 'arrivals':
@@ -183,12 +188,13 @@ def view_stats(dep, metric, clicks):
                     values = 'Count', 
                     names = 'Status' , 
                     hole = 0.7,
-                    title = f'{metric.title()[0:-1]} Metrics',
-                   color = 'Status',
-                   color_discrete_map = {
+                    title = f'Recent {metric.title()[0:-1]} Metrics',
+                    color = 'Status',
+                    color_discrete_map = {
                        'On Time':'green',
                        'Delayed':'yellow',
-                       'Canceled':'red'
+                       'Canceled':'red',
+                        'N/A':'gray'
                    })
     
     carrier = []
@@ -201,7 +207,8 @@ def view_stats(dep, metric, clicks):
     
     for page in range(0,total_pages+1):
         
-        all_ac = fr_api.get_airport_details(dep.upper().strip(), page = page)['airport']['pluginData']['schedule'][metric]['data']
+        all_ac = fr_api.get_airport_details(dep.upper().strip(), 
+                                            page = page)['airport']['pluginData']['schedule'][metric]['data']
         
         live_ac = filter(lambda x: x['flight']['status']['live'] == True, all_ac)
 
