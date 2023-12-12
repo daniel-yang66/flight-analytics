@@ -35,48 +35,111 @@ app.layout = dbc.Container([
         dbc.Row([
         
         dcc.Input(id='dep',type='text', placeholder='Airport IATA (ex. SFO)', 
-                  style = {'text-align':'center','border-radius': 10,'width':200,'margin-bottom':17,'margin-left':460})], 
+                  style = {'text-align':'center',
+                           'border-radius': 10,
+                           'width':200,
+                           'margin-bottom':17,
+                           'margin-left':460})], 
             style = {'text-align':'center'}),
+        
+            dcc.RadioItems(id='metric',options = [
+                {'label':'Departure Metrics','value':'departures'},
+                {'label':'Arrival Metrics','value':'arrivals'}
+                
+            ], 
+                           value = 'departures',
+                           style = {'margin-bottom':12,
+                                    'font-size':15,
+                                    'font-family':'sans-serif',
+                                    'display':'flex',
+                                    'gap':12,
+                             'width':300,
+                             'margin-left':440,
+                             'color':'white'}),
         
         dbc.Row(
         html.Button('View Stats', id='submit', 
-                    style = {'margin-bottom':12,'width':200, 'margin-left':460,'border-radius':30,'background-color':'green','color':'white'}), style = {'text-align':'center'}),
+                    style = {'margin-bottom':12,
+                             'width':200,
+                             'margin-left':460,
+                             'border-radius':30,
+                             'background-color':'green',
+                             'color':'white'}), style = {'text-align':'center'}),
         dbc.Row([
         dbc.Col([
-            dcc.Graph(id='pie', figure = blank_figure() )
-        ]),
-        dbc.Col(dbc.Row(
-            dcc.Graph(id='pie2', figure = blank_figure() )),
-        ),
-            dcc.Graph(id='bar2', figure = blank_figure() ),
-            dcc.Graph(id='map', figure = blank_figure() )
+            dcc.Graph(id='pie', figure = blank_figure())
+        ], width = 4),
+        dbc.Col(dbc.Row(dcc.Graph(id='map', figure = blank_figure())
+            ),
+        width = 8),
+            dcc.Graph(id='bar2', figure = blank_figure()),
         ])
             
-        ])
-        
+        ])      
     
 ],
-    style = {'width':200, 'background-color':'green', 'margin-left':370, 'border':'white','border-radius':20,'margin-bottom':15}, 
-    selected_style = {'width':200,'margin-left':370, 'background-color':'lightblue', 'border':'white solid 3px','border-radius':20,'margin-bottom':15}),
+    style = {'width':200,
+             'height':40,
+             'display':'flex',
+             'align-items':'center',
+             'justify-content':'center',
+             'background-color':'green', 
+             'margin-left':370, 
+             'border':'white',
+             'border-radius':20,
+             'margin-bottom':15}, 
+    selected_style = {'width':200,
+                      'height':40,
+                      'display':'flex',
+                      'align-items':'center',
+                      'justify-content':'center',
+                      'margin-left':370,
+                      'background-color':'lightblue', 
+                      'border':'white solid 3px',
+                      'border-radius':20,
+                      'margin-bottom':15}),
         
         dcc.Tab(label = 'Airline Stats', id='Tab 2' ,children=[
             
             dbc.Row([
         
         dcc.Input(id='airline',type='text', placeholder='Airline Full Name', 
-                  style = {'text-align':'center','border-radius': 10,'width':200,'margin-bottom':17,'margin-left':460})], 
+                  style = {'text-align':'center',
+                           'border-radius': 10,
+                           'width':200,'margin-bottom':17,
+                           'margin-left':460})], 
             style = {'text-align':'center'}),
             
             dbc.Row(
         html.Button('View Stats', 
                     id='submit2', 
-                    style = {'margin-bottom':12,'width':200, 'margin-left':460,'border-radius':30,'background-color':'green','color':'white'}), style = {'text-align':'center'}),
+                    style = {'margin-bottom':12,
+                             'width':200, 
+                             'margin-left':460,
+                             'border-radius':30,
+                             'background-color':'green',
+                             'color':'white'}), style = {'text-align':'center'}),
             
             dcc.Graph(id='bar', figure = blank_figure()),
             dcc.Graph(id='hist', figure = blank_figure())
         ],
-                style = {'width':200,'background-color':'green', 'border':'white','border-radius':20,'margin-bottom':15}, 
-                selected_style = {'width':200, 'border':'white solid 3px','border-radius':20,'background-color':'lightblue','margin-bottom':15})
+                style = {'width':200,
+                         'height':40,
+                         'display':'flex',
+                         'align-items':'center',
+                         'justify-content':'center',
+                         'background-color':'green', 
+                         'border':'white','border-radius':20,
+                         'margin-bottom':15}, 
+                selected_style = {'width':200,
+                                  'height':40,
+                                  'display':'flex',
+                                  'align-items':'center',
+                                  'justify-content':'center',
+                                  'border':'white solid 3px',
+                                  'border-radius':20,
+                                  'background-color':'lightblue',
+                                  'margin-bottom':15})
 ]),
     dbc.Row([
         dbc.Col(
@@ -90,57 +153,39 @@ app.layout = dbc.Container([
 
 @app.callback(Output("submit", "n_clicks"),
               Output('pie','figure'),
-              Output('pie2','figure'),
               Output('bar2','figure'),
               Output('map','figure'),
               Input('dep','value'),
+              Input('metric','value'),
               Input('submit','n_clicks'))
 
-def view_stats(dep, clicks):
+def view_stats(dep, metric, clicks):
     if not clicks:
         raise PreventUpdate
         
-
     fr_api = FlightRadar24API()
     airport = fr_api.get_airport_details(dep.upper().strip())
     
-    dep_metric = pd.DataFrame(airport['airport']['pluginData']['details']['stats']['departures']['recent']['quantity'], 
+    metrics = pd.DataFrame(airport['airport']['pluginData']['details']['stats'][metric]['recent']['quantity'], 
                       index = [0])
     
-    depart = pd.DataFrame(list(['On Time']*int(dep_metric['onTime']) 
-                               + ['Delayed']*int(dep_metric['delayed'])
-                              + ['Canceled']*int(dep_metric['canceled'])), columns = ['Status'])
-    depart['Count'] = 1
+    flights = pd.DataFrame(list(['On Time']*int(metrics['onTime']) 
+                               + ['Delayed']*int(metrics['delayed'])
+                              + ['Canceled']*int(metrics['canceled'])), columns = ['Status'])
+    flights['Count'] = 1
     
-    arr_metric= pd.DataFrame(airport['airport']['pluginData']['details']['stats']['arrivals']['recent']['quantity'], 
-                      index = [0])
-    
-    arrive = pd.DataFrame(list(['On Time']*int(arr_metric['onTime']) 
-                               + ['Delayed']*int(arr_metric['delayed'])
-                              + ['Canceled']*int(arr_metric['canceled'])), columns = ['Status'])
-    arrive['Count'] = 1
+    airport_type = 'destination'
+    if metric == 'arrivals':
+        airport_type = 'origin'
     
     
-    figure = px.pie(depart.groupby('Status').count().reset_index(), 
+    figure = px.pie(flights.groupby('Status').count().reset_index(), 
                     values = 'Count', 
                     names = 'Status' , 
                     hole = 0.7,
-                    title = 'Departure Metrics',
+                    title = f'{metric.title()[0:-1]} Metrics',
                    color = 'Status',
                    color_discrete_map = {
-                       'On Time':'green',
-                       'Delayed':'yellow',
-                       'Canceled':'red'
-                   })
-
-
-    figure2 = px.pie(arrive.groupby('Status').count().reset_index(), 
-                    values = 'Count' , 
-                    names = 'Status', 
-                    hole = 0.7,
-                    title = 'Arrival Metrics',
-                    color = 'Status',
-                    color_discrete_map = {
                        'On Time':'green',
                        'Delayed':'yellow',
                        'Canceled':'red'
@@ -152,11 +197,11 @@ def view_stats(dep, clicks):
     lon = []
     name = []
     
-    total_pages = airport['airport']['pluginData']['schedule']['departures']['page']['total']
+    total_pages = airport['airport']['pluginData']['schedule'][metric]['page']['total']
     
     for page in range(0,total_pages+1):
         
-        all_ac = fr_api.get_airport_details(dep.upper().strip(), page = page)['airport']['pluginData']['schedule']['departures']['data']
+        all_ac = fr_api.get_airport_details(dep.upper().strip(), page = page)['airport']['pluginData']['schedule'][metric]['data']
         
         live_ac = filter(lambda x: x['flight']['status']['live'] == True, all_ac)
 
@@ -165,9 +210,9 @@ def view_stats(dep, clicks):
             if flight['flight']['airline']:
                 carrier.append(flight['flight']['airline']['short'])
                 delay_status.append(flight['flight']['status']['icon'])
-                lat.append(flight['flight']['airport']['destination']['position']['latitude'])
-                lon.append(flight['flight']['airport']['destination']['position']['longitude'])
-                name.append(flight['flight']['airport']['destination']['code']['iata'])
+                lat.append(flight['flight']['airport'][airport_type]['position']['latitude'])
+                lon.append(flight['flight']['airport'][airport_type]['position']['longitude'])
+                name.append(flight['flight']['airport'][airport_type]['code']['iata'])
                 
             else:
                 carrier.append('N/A')
@@ -177,10 +222,10 @@ def view_stats(dep, clicks):
                           columns=['Carrier','Delay Status','Lat','Lon','Code'])
     market['Count'] = 1
     
-    figure3 = px.bar(market.groupby(['Carrier','Delay Status']).count().reset_index(), 
+    figure2 = px.bar(market.groupby(['Carrier','Delay Status']).count().reset_index(), 
                      x='Carrier', 
                      y='Count',
-                    title = f'Flights Departing/Departed {dep.upper()}',
+                    title = f'{dep.upper()} {metric.title()}',
                     color = 'Delay Status',
                     color_discrete_map = {
                         'green':'green',
@@ -189,21 +234,20 @@ def view_stats(dep, clicks):
                         'N/A':'gray'
                     })
     
-    figure4 = px.scatter_mapbox(market.groupby(['Code','Lat','Lon']).count().reset_index(), 
+    figure3 = px.scatter_geo(market.groupby(['Code','Lat','Lon']).count().reset_index(), 
                                 lat = 'Lat',
                                 lon = 'Lon',
                                 color = 'Count',
-                                zoom = 1, 
                                 hover_name = 'Code',
                                 color_continuous_scale = px.colors.sequential.Tealgrn,
-                                title = f'{dep.upper()} Destinations (Live Aircraft)'
+                                title = f'{dep.upper()} {airport_type.title()} Airports'
                                ).update_layout(mapbox_style="dark", 
                                             mapbox_accesstoken='pk.eyJ1IjoiZGFuaWVseWFuZzc4NyIsImEiOiJjbHB6d3E1Y2IxNnF2MmpwcHRnbnVxZm94In0.D9wJEwgIDAr-V2EN5zDTJw')
     
     
     clicks = None
     
-    return clicks, figure, figure2, figure3, figure4
+    return clicks, figure, figure2, figure3
 
 @app.callback(Output("submit2", "n_clicks"),
               Output('bar','figure'),
