@@ -180,8 +180,10 @@ def view_stats(dep, metric, clicks):
         flights['Count'] = '0'
     
     airport_type = 'destination'
+    heading = f'Where Flights are Headed'
     if metric == 'arrivals':
         airport_type = 'origin'
+        heading = 'Where Flights are Arriving From'
     
     
     figure = px.pie(flights.groupby('Status').count().reset_index(), 
@@ -247,7 +249,7 @@ def view_stats(dep, metric, clicks):
                                 color = 'Count',
                                 hover_name = 'Code',
                                 color_continuous_scale = px.colors.sequential.Tealgrn,
-                                title = f'{dep.upper()} {airport_type.title()} Airports'
+                                title = heading
                                ).update_layout(mapbox_style="dark", 
                                             mapbox_accesstoken='pk.eyJ1IjoiZGFuaWVseWFuZzc4NyIsImEiOiJjbHB6d3E1Y2IxNnF2MmpwcHRnbnVxZm94In0.D9wJEwgIDAr-V2EN5zDTJw')
     
