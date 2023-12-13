@@ -10,7 +10,10 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-app = Dash(__name__, external_stylesheets = [dbc.themes.DARKLY])
+app = Dash(__name__, 
+                  external_stylesheets = [dbc.themes.DARKLY],
+                  meta_tags = [{'name':'viewport','content':'width=device-width, initial-scale=1'}]
+                 )
 server = app.server
 
 load_figure_template('slate')
@@ -231,7 +234,7 @@ def view_stats(dep, metric, clicks):
                           columns=['Carrier','Delay Status','Lat','Lon','Code'])
     market['Count'] = 1
     
-    figure2 = px.bar(market.groupby(['Carrier','Delay Status']).count().reset_index(), 
+    figure2 = px.bar(market.groupby(['Carrier','Delay Status']).count().reset_index().sort_values(by = 'Carrier',ascending=True), 
                      x='Carrier', 
                      y='Count',
                     title = f'{dep.upper()} {metric.title()}',
