@@ -29,7 +29,17 @@ def blank_figure():
 city_code = pd.read_csv('city_code.txt', delimiter = ':').dropna(subset = ['iata'])
 airlines = pd.read_csv('airlines.csv',delimiter = ',').query("Active == 'Y'")
 
-app.layout = dbc.Container([dbc.Container([
+app.layout = dbc.Container([
+    dbc.Col(
+    dbc.Card(id='wx', children = [
+        html.H4(id='airport', style = {'font-weight':'bold',
+                                     'font-family':'sans-serif',
+                                    'font-size':20}),
+        html.P(id='condition'),
+    ], style = {'display':'grid',
+               'justify-items':'center',
+               'align-items':'center'}), width = 3),
+                            dbc.Container([
     dbc.Row(
     html.H2(id='title', children="AeroStat", 
             style = {'font-weight':'bold','font-size':40, 'font-family':'sans-serif'}),
@@ -188,6 +198,8 @@ def get_iata(value):
               Output('pie','figure'),
               Output('bar2','figure'),
               Output('map','figure'),
+              Output('airport','children'),
+              Output('condition','children'),
               Input('dep','value'),
               Input('metric','value'),
               Input('submit','n_clicks'))
@@ -217,6 +229,32 @@ def view_stats(dep, metric, clicks):
     if metric == 'arrivals':
         airport_type = 'origin'
         heading = 'Where Flights are Arriving From'
+        
+    if airport['airport']['pluginData']['weather']['temp']['fahrenheit']:
+        temp = airport['airport']['pluginData']['weather']['temp']['fahrenheit']
+        
+    else:
+        temp = 'N/A'
+        
+    if airport['airport']['pluginData']['weather']['sky']['condition']['text']:
+        sky = airport['airport']['pluginData']['weather']['sky']['condition']['text']
+    else:
+        sky = 'N/A'
+        
+    if airport['airport']['pluginData']['weather']['wind']['direction']['text'] == 'Variable':
+        wind_dir = airport['airport']['pluginData']['weather']['wind']['direction']['text']
+    elif airport['airport']['pluginData']['weather']['wind']['direction']['degree']:
+        wind_dir = airport['airport']['pluginData']['weather']['wind']['direction']['degree']
+    else:
+        wind_dir = 'N/A'
+    
+    if airport['airport']['pluginData']['weather']['wind']['speed']['mph']:
+        wind_speed = airport['airport']['pluginData']['weather']['wind']['speed']['mph']
+    else:
+        wind_speed = 'N/A'
+    
+    weather_heading = f'{dep.upper()} Weather'
+    weather_info = f'{sky} | {temp}\u00B0F | Wind: {wind_dir}\u00B0 - {wind_speed} mph'
     
     
     figure = px.pie(flights.groupby('Status').count().reset_index(), 
@@ -289,7 +327,7 @@ def view_stats(dep, metric, clicks):
     
     clicks = None
     
-    return clicks, figure, figure2, figure3
+    return clicks, figure, figure2, figure3, weather_heading, weather_info
 
 @app.callback(Output("submit2", "n_clicks"),
               Output('bar','figure'),
