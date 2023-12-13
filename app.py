@@ -250,11 +250,17 @@ def view_stats(dep, metric, clicks):
     
     if airport['airport']['pluginData']['weather']['wind']['speed']['mph']:
         wind_speed = airport['airport']['pluginData']['weather']['wind']['speed']['mph']
+
     else:
         wind_speed = 'N/A'
+
+    wind_info = f'Wind: {wind_dir}\u00B0 - {wind_speed} mph'
+        
+    if airport['airport']['pluginData']['weather']['wind']['speed']['mph'] == 0:
+        wind_info = 'Wind: Calm'
     
     weather_heading = f'{dep.upper()} Weather'
-    weather_info = f'{sky} | {temp}\u00B0F | Wind: {wind_dir}\u00B0 - {wind_speed} mph'
+    weather_info = f'{sky} | {temp}\u00B0F | {wind_info}'
     
     figure = px.pie(flights.groupby('Status').count().reset_index(), 
                     values = 'Count', 
