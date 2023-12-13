@@ -26,12 +26,18 @@ def blank_figure():
     
     return fig
 
-app.layout = dbc.Container([
+app.layout = dbc.Container([dbc.Container([
+    dbc.Row(
     html.H2(id='title', children="AeroStat", 
-            style = {'margin-left':460,'font-weight':'bold','font-size':40, 'font-family':'sans-serif'}),
+            style = {'font-weight':'bold','font-size':40, 'font-family':'sans-serif'}),
+        style = {
+                 'font-weight':'bold',
+                 'font-size':40,
+                 'font-family':'sans-serif'}),
     
         dbc.Row(html.P("Live Airport/Airline Metrics",
-                         style = {'font-size':16,'margin-bottom':12, 'margin-left':450})),
+                         ),style = {'font-size':16,
+                                    'margin-bottom':12}),
     dcc.Tabs(id='tabs', children = [
         dcc.Tab(label = 'Airport Stats',id='Tab 1', children = [
             dbc.Row([
@@ -41,9 +47,9 @@ app.layout = dbc.Container([
                   style = {'text-align':'center',
                            'border-radius': 10,
                            'width':200,
-                           'margin-bottom':17,
-                           'margin-left':460})], 
-            style = {'text-align':'center'}),
+                           'margin-bottom':17})], 
+            style = {'text-align':'center',
+                    'justify-content':'center'}),
         
             dcc.RadioItems(id='metric',options = [
                 {'label':'Departure Metrics','value':'departures'},
@@ -57,17 +63,16 @@ app.layout = dbc.Container([
                                     'display':'flex',
                                     'gap':12,
                              'width':300,
-                             'margin-left':440,
                              'color':'white'}),
         
         dbc.Row(
         html.Button('View Stats', id='submit', 
                     style = {'margin-bottom':12,
                              'width':200,
-                             'margin-left':460,
                              'border-radius':30,
                              'background-color':'green',
-                             'color':'white'}), style = {'text-align':'center'}),
+                             'color':'white'}), style = {'text-align':'center',
+                                                        'justify-content':'center'}),
         dbc.Row([
         dbc.Col([
             dcc.Graph(id='pie', figure = blank_figure())
@@ -78,7 +83,7 @@ app.layout = dbc.Container([
             dcc.Graph(id='bar2', figure = blank_figure()),
         ])
             
-        ])      
+        ], style = {'display':'grid','justify-items':'center'})      
     
 ],
     style = {'width':200,
@@ -87,7 +92,6 @@ app.layout = dbc.Container([
              'align-items':'center',
              'justify-content':'center',
              'background-color':'green', 
-             'margin-left':370, 
              'border':'white',
              'border-radius':20,
              'margin-bottom':15}, 
@@ -96,7 +100,6 @@ app.layout = dbc.Container([
                       'display':'flex',
                       'align-items':'center',
                       'justify-content':'center',
-                      'margin-left':370,
                       'background-color':'lightblue', 
                       'border':'white solid 3px',
                       'border-radius':20,
@@ -109,22 +112,22 @@ app.layout = dbc.Container([
         dcc.Input(id='airline',type='text', placeholder='Airline Full Name', 
                   style = {'text-align':'center',
                            'border-radius': 10,
-                           'width':200,'margin-bottom':17,
-                           'margin-left':460})], 
-            style = {'text-align':'center'}),
+                           'width':200,'margin-bottom':17})], 
+            style = {'text-align':'center',
+                     'justify-content':'center'}),
             
             dbc.Row(
         html.Button('View Stats', 
                     id='submit2', 
                     style = {'margin-bottom':12,
-                             'width':200, 
-                             'margin-left':460,
+                             'width':200,
                              'border-radius':30,
                              'background-color':'green',
-                             'color':'white'}), style = {'text-align':'center'}),
-            
+                             'color':'white'}), style = {'text-align':'center',
+                                                        'justify-content':'center'}),
+            dbc.Row([
             dcc.Graph(id='bar', figure = blank_figure()),
-            dcc.Graph(id='hist', figure = blank_figure())
+            dcc.Graph(id='hist', figure = blank_figure())])
         ],
                 style = {'width':200,
                          'height':40,
@@ -143,16 +146,19 @@ app.layout = dbc.Container([
                                   'border-radius':20,
                                   'background-color':'lightblue',
                                   'margin-bottom':15})
-]),
-    dbc.Row([
-        dbc.Col(
-    html.Footer('Copyright'), width = 1),
-        dbc.Col(
+], style = {'justify-content':'center'}),
+    ], style = {'display':'grid',
+                'justify-items':'center'}),
+html.Div([
+        
+    html.Footer('Copyright'),     
         dcc.Link(children = 'Daniel Yang',
                  href = 'https://www.linkedin.com/in/daniel-yang-a17ab3229/', 
-                 target = '_blank', style = {'margin-left': -15}))
-    ], style = {'margin-bottom':12,'margin-top':12,'margin-left':-22})
-    ])
+                 target = '_blank')
+    ], style = {'display':'flex','gap':10,
+                'margin-bottom':12,
+                'margin-top':12,
+               'align-self':'flex-start'})])
 
 @app.callback(Output("submit", "n_clicks"),
               Output('pie','figure'),
