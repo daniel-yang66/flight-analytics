@@ -46,7 +46,7 @@ app.layout = dbc.Container([dbc.Container([
         dbc.Row([
         dcc.Dropdown(id='city',
                      placeholder = 'Select a City',
-                     options = city_code['city'].tolist(), 
+                     options = sorted(city_code['city'].tolist()), 
                      style = {'text-align':'center',
                            'border-radius': 10,
                            'width':200,
@@ -178,7 +178,7 @@ html.Div([
              Input('city','value'))
 
 def get_iata(value):
-    return city_code[city_code['city']==value]['iata']
+    return sorted(city_code[city_code['city']==value]['iata'].tolist())
 
 @app.callback(Output("submit", "n_clicks"),
               Output('pie','figure'),
