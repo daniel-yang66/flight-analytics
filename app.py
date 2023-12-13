@@ -26,9 +26,8 @@ def blank_figure():
     
     return fig
 
-city_code = pd.read_csv('city_code.txt', delimiter = ':')
-airlines = pd.read_csv('airlines.csv',delimiter = ',')
-active_airlines = airlines[airlines['Active'] == 'Y']
+city_code = pd.read_csv('city_code.txt', delimiter = ':').dropna(subset = ['iata'])
+airlines = pd.read_csv('airlines.csv',delimiter = ',').query("Active == 'Y'")
 
 app.layout = dbc.Container([dbc.Container([
     dbc.Row(
@@ -123,7 +122,7 @@ app.layout = dbc.Container([dbc.Container([
             dbc.Row([
         
         dcc.Dropdown(id='airline', 
-                  options = sorted(active_airlines['Name'].tolist()),
+                  options = sorted(airlines['Name'].tolist()),
                   placeholder='Select Airline', 
                   style = {'text-align':'center',
                            'color':'black',
@@ -183,7 +182,7 @@ html.Div([
              Input('city','value'))
 
 def get_iata(value):
-    return sorted(city_code[city_code['city']==value]['iata'].tolist())
+    return sorted(city_code[city_code['city'] == value]['iata'].tolist())
 
 @app.callback(Output("submit", "n_clicks"),
               Output('pie','figure'),
