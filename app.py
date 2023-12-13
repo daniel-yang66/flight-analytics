@@ -26,6 +26,8 @@ def blank_figure():
     
     return fig
 
+city_code = pd.read_csv('city_code.txt', delimiter = ':')
+
 app.layout = dbc.Container([dbc.Container([
     dbc.Row(
     html.H2(id='title', children="AeroStat", 
@@ -42,11 +44,19 @@ app.layout = dbc.Container([dbc.Container([
         dcc.Tab(label = 'Airport Stats',id='Tab 1', children = [
             dbc.Row([
         dbc.Row([
-        
-        dcc.Input(id='dep',type='text', placeholder='Airport IATA (ex. SFO)', 
+        dcc.Dropdown(id='city',
+                     placeholder = 'Select a City',
+                     options = city_code['city'].tolist(), 
+                     style = {'text-align':'center',
+                           'border-radius': 10,
+                           'width':200,
+                          'color':'black'}),
+        dcc.Dropdown(id='dep',
+                     placeholder = 'Select Airport',
                   style = {'text-align':'center',
                            'border-radius': 10,
-                           'width':200})], 
+                           'width':200,
+                          'color':'black'})], 
             style = {'text-align':'center',
                     'justify-content':'center'}),
         
@@ -164,6 +174,11 @@ html.Div([
                 'margin-bottom':12,
                 'margin-top':12,
                'align-self':'flex-start'})])
+@app.callback(Output('dep','options'),
+             Input('city','value'))
+
+def get_iata(value):
+    return city_code[city_code['city']==value]['iata']
 
 @app.callback(Output("submit", "n_clicks"),
               Output('pie','figure'),
