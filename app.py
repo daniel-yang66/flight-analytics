@@ -36,9 +36,9 @@ app.layout = dbc.Container([
                                      'font-family':'sans-serif',
                                     'font-size':20}),
         html.P(id='condition'),
-    ], style = {'display':'grid',
-               'justify-items':'center',
-               'align-items':'center'}), width = 3),
+    ], style = {'display':'flex',
+               'justify-content':'center',
+               'align-items':'center'}), width = 5),
                             dbc.Container([
     dbc.Row(
     html.H2(id='title', children="AeroStat", 
@@ -283,16 +283,13 @@ def view_stats(dep, metric, clicks):
                                             page = page)['airport']['pluginData']['schedule'][metric]['data']
         
         live_ac = filter(lambda x: x['flight']['status']['live'] == True, all_ac)
-        counter = 0
         for flight in live_ac:
             if flight['flight']['airline']:
-                print(counter)
                 carrier.append(flight['flight']['airline']['short'])
                 delay_status.append(flight['flight']['status']['icon'])
                 lat.append(flight['flight']['airport'][airport_type]['position']['latitude'])
                 lon.append(flight['flight']['airport'][airport_type]['position']['longitude'])
                 name.append(flight['flight']['airport'][airport_type]['code']['iata'])
-                counter +=1
                 
             else:
                 carrier.append('N/A')
@@ -319,9 +316,9 @@ def view_stats(dep, metric, clicks):
                                 lon = 'Lon',
                                 color = 'Count',
                                 hover_name = 'Code',
-                                color_continuous_scale = px.colors.sequential.Tealgrn,
+                                color_continuous_scale = px.colors.sequential.Sunset,
                                 title = heading
-                               ).update_layout(mapbox_style="dark", 
+                               ).update_coloraxes(showscale=False).update_layout(mapbox_style="dark", 
                                             mapbox_accesstoken='pk.eyJ1IjoiZGFuaWVseWFuZzc4NyIsImEiOiJjbHB6d3E1Y2IxNnF2MmpwcHRnbnVxZm94In0.D9wJEwgIDAr-V2EN5zDTJw')
     
     
