@@ -36,8 +36,8 @@ app.layout = dbc.Container([dbc.Container([
                  'font-family':'sans-serif'}),
     
         dbc.Row(html.P("Live Airport/Airline Metrics",
-                         ),style = {'font-size':16,
-                                    'margin-bottom':12}),
+                         ),style = {'font-size':16}),
+    
     dcc.Tabs(id='tabs', children = [
         dcc.Tab(label = 'Airport Stats',id='Tab 1', children = [
             dbc.Row([
@@ -46,8 +46,7 @@ app.layout = dbc.Container([dbc.Container([
         dcc.Input(id='dep',type='text', placeholder='Airport IATA (ex. SFO)', 
                   style = {'text-align':'center',
                            'border-radius': 10,
-                           'width':200,
-                           'margin-bottom':17})], 
+                           'width':200})], 
             style = {'text-align':'center',
                     'justify-content':'center'}),
         
@@ -57,7 +56,7 @@ app.layout = dbc.Container([dbc.Container([
                 
             ], 
                            value = 'departures',
-                           style = {'margin-bottom':12,
+                           style = {
                                     'font-size':15,
                                     'font-family':'sans-serif',
                                     'display':'flex',
@@ -67,7 +66,7 @@ app.layout = dbc.Container([dbc.Container([
         
         dbc.Row(
         html.Button('View Stats', id='submit', 
-                    style = {'margin-bottom':12,
+                    style = {
                              'width':200,
                              'border-radius':30,
                              'background-color':'green',
@@ -83,43 +82,45 @@ app.layout = dbc.Container([dbc.Container([
             dcc.Graph(id='bar2', figure = blank_figure()),
         ])
             
-        ], style = {'display':'grid','justify-items':'center'})      
+        ], style = {'display':'grid','justify-items':'center','row-gap':12})      
     
 ],
     style = {'width':200,
+             'margin-bottom':12,
              'height':40,
              'display':'flex',
              'align-items':'center',
              'justify-content':'center',
              'background-color':'green', 
              'border':'white',
-             'border-radius':20,
-             'margin-bottom':15}, 
+             'border-radius':20}, 
     selected_style = {'width':200,
+                      'margin-bottom':12,
                       'height':40,
                       'display':'flex',
                       'align-items':'center',
                       'justify-content':'center',
                       'background-color':'lightblue', 
                       'border':'white solid 3px',
-                      'border-radius':20,
-                      'margin-bottom':15}),
+                      'border-radius':20}),
         
         dcc.Tab(label = 'Airline Stats', id='Tab 2' ,children=[
+            
+            dbc.Row([
             
             dbc.Row([
         
         dcc.Input(id='airline',type='text', placeholder='Airline Full Name', 
                   style = {'text-align':'center',
                            'border-radius': 10,
-                           'width':200,'margin-bottom':17})], 
+                           'width':200})], 
             style = {'text-align':'center',
                      'justify-content':'center'}),
             
             dbc.Row(
         html.Button('View Stats', 
                     id='submit2', 
-                    style = {'margin-bottom':12,
+                    style = {
                              'width':200,
                              'border-radius':30,
                              'background-color':'green',
@@ -127,25 +128,29 @@ app.layout = dbc.Container([dbc.Container([
                                                         'justify-content':'center'}),
             dbc.Row([
             dcc.Graph(id='bar', figure = blank_figure()),
-            dcc.Graph(id='hist', figure = blank_figure())])
+            dcc.Graph(id='hist', figure = blank_figure())])], style = {
+                'display':'grid',
+                'row-gap':12,
+                'justify-items':'center'
+            })
         ],
                 style = {'width':200,
+                         'margin-bottom':12,
                          'height':40,
                          'display':'flex',
                          'align-items':'center',
                          'justify-content':'center',
                          'background-color':'green', 
-                         'border':'white','border-radius':20,
-                         'margin-bottom':15}, 
+                         'border':'white','border-radius':20}, 
                 selected_style = {'width':200,
+                                  'margin-bottom':12,
                                   'height':40,
                                   'display':'flex',
                                   'align-items':'center',
                                   'justify-content':'center',
                                   'border':'white solid 3px',
                                   'border-radius':20,
-                                  'background-color':'lightblue',
-                                  'margin-bottom':15})
+                                  'background-color':'lightblue'})
 ], style = {'justify-content':'center'}),
     ], style = {'display':'grid',
                 'justify-items':'center'}),
