@@ -226,13 +226,13 @@ def view_stats(dep, metric, clicks):
     
     airport_type = 'destination'
     heading = f'Where Flights are Headed'
+    
     if metric == 'arrivals':
         airport_type = 'origin'
         heading = 'Where Flights are Arriving From'
         
     if airport['airport']['pluginData']['weather']['temp']['fahrenheit']:
-        temp = airport['airport']['pluginData']['weather']['temp']['fahrenheit']
-        
+        temp = airport['airport']['pluginData']['weather']['temp']['fahrenheit']     
     else:
         temp = 'N/A'
         
@@ -256,12 +256,11 @@ def view_stats(dep, metric, clicks):
     weather_heading = f'{dep.upper()} Weather'
     weather_info = f'{sky} | {temp}\u00B0F | Wind: {wind_dir}\u00B0 - {wind_speed} mph'
     
-    
     figure = px.pie(flights.groupby('Status').count().reset_index(), 
                     values = 'Count', 
                     names = 'Status' , 
                     hole = 0.7,
-                    title = f'Recent {metric.title()[0:-1]} Metrics',
+                    title = f"Today's Recent {metric.title()[0:-1]} Metrics",
                     color = 'Status',
                     color_discrete_map = {
                        'On Time':'green',
@@ -284,15 +283,16 @@ def view_stats(dep, metric, clicks):
                                             page = page)['airport']['pluginData']['schedule'][metric]['data']
         
         live_ac = filter(lambda x: x['flight']['status']['live'] == True, all_ac)
-
+        counter = 0
         for flight in live_ac:
-            
             if flight['flight']['airline']:
+                print(counter)
                 carrier.append(flight['flight']['airline']['short'])
                 delay_status.append(flight['flight']['status']['icon'])
                 lat.append(flight['flight']['airport'][airport_type]['position']['latitude'])
                 lon.append(flight['flight']['airport'][airport_type]['position']['longitude'])
                 name.append(flight['flight']['airport'][airport_type]['code']['iata'])
+                counter +=1
                 
             else:
                 carrier.append('N/A')
@@ -305,7 +305,7 @@ def view_stats(dep, metric, clicks):
     figure2 = px.bar(market.groupby(['Carrier','Delay Status']).count().reset_index().sort_values(by = 'Carrier',ascending=True), 
                      x='Carrier', 
                      y='Count',
-                    title = f'{dep.upper()} {metric.title()}',
+                    title = f'{dep.upper()} {metric.title()} (Airborne & On Ground)',
                     color = 'Delay Status',
                     color_discrete_map = {
                         'green':'green',
