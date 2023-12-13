@@ -27,6 +27,8 @@ def blank_figure():
     return fig
 
 city_code = pd.read_csv('city_code.txt', delimiter = ':')
+airlines = pd.read_csv('airlines.csv',delimiter = ',')
+active_airlines = airlines[airlines['Active'] == 'Y']
 
 app.layout = dbc.Container([dbc.Container([
     dbc.Row(
@@ -120,8 +122,11 @@ app.layout = dbc.Container([dbc.Container([
             
             dbc.Row([
         
-        dcc.Input(id='airline',type='text', placeholder='Airline Full Name', 
+        dcc.Dropdown(id='airline', 
+                  options = sorted(active_airlines['Name'].tolist()),
+                  placeholder='Select Airline', 
                   style = {'text-align':'center',
+                           'color':'black',
                            'border-radius': 10,
                            'width':200})], 
             style = {'text-align':'center',
