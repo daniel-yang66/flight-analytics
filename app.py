@@ -56,14 +56,14 @@ app.layout = dbc.Container([
             dbc.Row([
         dbc.Row([
         dcc.Dropdown(id='city',
-                     placeholder = 'Select a City',
+                     placeholder = '1. Enter City',
                      options = sorted(city_code['city'].tolist()), 
                      style = {'text-align':'center',
                            'border-radius': 10,
                            'width':200,
                           'color':'black'}),
         dcc.Dropdown(id='dep',
-                     placeholder = 'Select Airport',
+                     placeholder = '2. Select Airport',
                   style = {'text-align':'center',
                            'border-radius': 10,
                            'width':200,
@@ -353,17 +353,37 @@ def view_stats2(company, clicks):
     
     aircraft = []
     alt = []
+    speed = []
+    status = []
     for a in all_flights:
         aircraft.append(str(a)[2:6])
         alt.append(int(str(a)[str(a).index('Altitude') + 10 : str(a).index('Ground Speed') - 3 ]))
+        speed.append(int(str(a)[str(a).index('Ground Speed') + 14 : str(a).index('Heading') - 3 ]))
+    for a,s in zip(alt,speed):
+        if a == 0 and s == 0:
+            status.append('Parked')
+        elif a == 0 and s > 0:
+            status.append('Taxi/Takeoff')
+        elif a > 0:
+            status.append('Airborne')
+        else:
+            status.append('N/A')
         
-    ac = pd.DataFrame(list(zip(aircraft,alt)),columns=['Aircraft','Altitude'])
+    ac = pd.DataFrame(list(zip(aircraft,alt,speed)),columns=['Aircraft','Altitude','Ground Speed'])
     ac['Count'] = 1
+    ac['Status'] = status
     
-    figure = px.bar(ac.groupby('Aircraft').count().reset_index().sort_values(by='Count',ascending=False), 
+    figure = px.bar(ac.groupby(['Aircraft','Status']).count().reset_index().sort_values(by='Count',ascending=False), 
                         x='Aircraft',
-                        y='Count', 
-                        title='Live Aircraft').update_traces(marker_color='green')
+                        y='Count',
+                        color = 'Status',
+                        color_discrete_map = {
+                            'Parked':'blue',
+                            'Taxi/Takeoff':'yellow',
+                            'Airborne':'green',
+                            'N/A':'gray'
+                        },
+                        title='Live Aircraft')
     
     figure2 = px.histogram(ac, x='Altitude', 
                            title = 'Altitude Distribution'
