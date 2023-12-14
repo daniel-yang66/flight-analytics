@@ -38,7 +38,7 @@ app.layout = dbc.Container([
         html.P(id='condition'),
     ], style = {'display':'flex',
                'justify-content':'center',
-               'align-items':'center'}), width = 5),
+               'align-items':'center'}), width = 4),
                             dbc.Container([
     dbc.Row(
     html.H2(id='title', children="AeroStat", 
