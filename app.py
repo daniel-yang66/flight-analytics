@@ -16,8 +16,6 @@ app = Dash(__name__,
                  )
 server = app.server
 
-fr_api = FlightRadar24API()
-
 load_figure_template('slate')
 
 def blank_figure():
@@ -29,6 +27,8 @@ def blank_figure():
     return fig
 
 city_code = pd.read_csv('city_code.txt', delimiter = ':').dropna(subset = ['iata'])
+
+fr_api = FlightRadar24API()
 
 all_carr = fr_api.get_airlines()
 
@@ -153,7 +153,7 @@ app.layout = dbc.Container([
                   style = {'text-align':'center',
                            'color':'black',
                            'border-radius': 10,
-                           'width':200})], 
+                           'width':250})], 
             style = {'text-align':'center',
                      'justify-content':'center'}),
             
@@ -161,11 +161,16 @@ app.layout = dbc.Container([
         html.Button('View Stats', 
                     id='submit2', 
                     style = {
-                             'width':200,
+                             'width':230,
                              'border-radius':30,
                              'background-color':'green',
                              'color':'white'}), style = {'text-align':'center',
                                                         'justify-content':'center'}),
+                dbc.Row(
+                    html.P('Blank charts indicate no data available or no aircraft active'),
+                    style = {'text-align':'center','justify-content':'center'}
+                ),
+                
             dbc.Row([
             dcc.Graph(id='bar', figure = blank_figure()),
             dcc.Graph(id='hist', figure = blank_figure())])], style = {
@@ -407,7 +412,7 @@ def view_stats2(company, clicks):
     
 
 if __name__ == '__main__':
-    app.run_server(debug= False)
+    app.run_server(debug = False)
 
 
 
