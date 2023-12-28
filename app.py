@@ -16,6 +16,8 @@ app = Dash(__name__,
                  )
 server = app.server
 
+fr_api = FlightRadar24API()
+
 load_figure_template('slate')
 
 def blank_figure():
@@ -27,7 +29,21 @@ def blank_figure():
     return fig
 
 city_code = pd.read_csv('city_code.txt', delimiter = ':').dropna(subset = ['iata'])
-airlines = pd.read_csv('airlines.csv',delimiter = ',').query("Active == 'Y'")
+
+all_carr = fr_api.get_airlines()
+
+icaos = []
+
+for carr in all_carr:
+    pair = {'label':carr['Name'], 'value': carr['ICAO']}
+    icaos.append(pair)
+   
+city = city_code['city'].tolist()
+code = city_code['iata'].tolist()
+options = []
+for a,c in zip(code, city):
+    pair = {'label':a,'value':c}
+    options.append(pair)
 
 app.layout = dbc.Container([
     dbc.Col(
@@ -56,14 +72,14 @@ app.layout = dbc.Container([
             dbc.Row([
         dbc.Row([
         dcc.Dropdown(id='city',
-                     placeholder = '1. Enter City',
-                     options = sorted(city_code['city'].tolist()), 
+                     placeholder = 'Select a City',
+                     options = city_code['city'].tolist(), 
                      style = {'text-align':'center',
                            'border-radius': 10,
                            'width':200,
                           'color':'black'}),
         dcc.Dropdown(id='dep',
-                     placeholder = '2. Select Airport',
+                     placeholder = 'Select Airport',
                   style = {'text-align':'center',
                            'border-radius': 10,
                            'width':200,
@@ -132,8 +148,8 @@ app.layout = dbc.Container([
             dbc.Row([
         
         dcc.Dropdown(id='airline', 
-                  options = sorted(airlines['Name'].tolist()),
-                  placeholder='Select Airline', 
+                  options = icaos,
+                  placeholder='Search Airline', 
                   style = {'text-align':'center',
                            'color':'black',
                            'border-radius': 10,
@@ -208,7 +224,6 @@ def view_stats(dep, metric, clicks):
     if not clicks:
         raise PreventUpdate
         
-    fr_api = FlightRadar24API()
     airport = fr_api.get_airport_details(dep.upper().strip())
     
     if airport['airport']['pluginData']['details']['stats']:
@@ -343,13 +358,10 @@ def view_stats2(company, clicks):
     if not clicks:
         raise PreventUpdate
         
-    fr_api = FlightRadar24API()
     
     all_carriers = fr_api.get_airlines()
-    
-    carrier = filter(lambda x: x['Name'].lower() == company.lower().strip(),all_carriers)
-    
-    all_flights = fr_api.get_flights(airline = list(carrier)[0]['ICAO'])
+        
+    all_flights = fr_api.get_flights(airline = company.upper())
     
     aircraft = []
     alt = []
@@ -395,7 +407,7 @@ def view_stats2(company, clicks):
     
 
 if __name__ == '__main__':
-    app.run_server(debug = False)
+    app.run_server(debug= False)
 
 
 
