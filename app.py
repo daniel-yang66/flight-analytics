@@ -8,7 +8,6 @@ from dash_bootstrap_templates import load_figure_template
 
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 
 app = Dash(__name__, 
                   external_stylesheets = [dbc.themes.DARKLY],
@@ -17,14 +16,6 @@ app = Dash(__name__,
 server = app.server
 
 load_figure_template('slate')
-
-def blank_figure():
-    fig = go.Figure(go.Scatter(x=[], y = []))
-    fig.update_layout(template = None, plot_bgcolor='#454545', paper_bgcolor = '#454545')
-    fig.update_xaxes(showgrid = False, showticklabels = False, zeroline=False)
-    fig.update_yaxes(showgrid = False, showticklabels = False, zeroline=False)
-    
-    return fig
 
 city_code = pd.read_csv('city_code.txt', delimiter = ':').dropna(subset = ['iata'])
 
@@ -47,11 +38,11 @@ for a,c in zip(code, city):
 
 app.layout = dbc.Container([
     dbc.Col(
-    dbc.Card(id='wx', children = [
+    html.Div(id='wx', children = [dbc.Card([
         html.H4(id='airport', style = {'font-weight':'bold',
                                      'font-family':'sans-serif',
                                     'font-size':20}),
-        html.P(id='condition'),
+        html.P(id='condition')], style = {'text-align':'center', 'padding':5}),
     ], style = {'display':'flex',
                'justify-content':'center',
                'align-items':'center'}), width = 4),
@@ -111,12 +102,15 @@ app.layout = dbc.Container([
                                                         'justify-content':'center'}),
         dbc.Row([
         dbc.Col([
-            dcc.Graph(id='pie', figure = blank_figure())
+            html.Div(id='pie', style = {'text-align':'center',
+                                                        'justify-content':'center'})
         ], width = 4),
-        dbc.Col(dbc.Row(dcc.Graph(id='map', figure = blank_figure())
+        dbc.Col(dbc.Row(html.Div(id='map', style = {'text-align':'center',
+                                                        'justify-content':'center'})
             ),
         width = 8),
-            dcc.Graph(id='bar2', figure = blank_figure()),
+            html.Div(id='bar2', style = {'text-align':'center',
+                                                        'justify-content':'center'}),
         ])
             
         ], style = {'display':'grid','justify-items':'center','row-gap':12})      
@@ -166,14 +160,12 @@ app.layout = dbc.Container([
                              'background-color':'green',
                              'color':'white'}), style = {'text-align':'center',
                                                         'justify-content':'center'}),
-                dbc.Row(
-                    html.P('Blank charts indicate no data available or no aircraft active'),
-                    style = {'text-align':'center','justify-content':'center'}
-                ),
                 
             dbc.Row([
-            dcc.Graph(id='bar', figure = blank_figure()),
-            dcc.Graph(id='hist', figure = blank_figure())])], style = {
+            html.Div(id='bar', style = {'text-align':'center',
+                                                        'justify-content':'center'}),
+            html.Div(id='hist', style = {'text-align':'center',
+                                                        'justify-content':'center'})])], style = {
                 'display':'grid',
                 'row-gap':12,
                 'justify-items':'center'
@@ -205,10 +197,12 @@ html.Div([
         dcc.Link(children = 'Daniel Yang',
                  href = 'https://www.linkedin.com/in/daniel-yang-a17ab3229/', 
                  target = '_blank')
-    ], style = {'display':'flex','gap':10,
-                'margin-bottom':12,
-                'margin-top':12,
-               'align-self':'flex-start'})])
+    ], style = {'display':'flex',
+                'gap':10,
+               'align-self':'flex-start',
+               'position':'absolute',
+               'top':10,
+               'right':10})])
 @app.callback(Output('dep','options'),
              Input('city','value'))
 
@@ -216,9 +210,9 @@ def get_iata(value):
     return sorted(city_code[city_code['city'] == value]['iata'].tolist())
 
 @app.callback(Output("submit", "n_clicks"),
-              Output('pie','figure'),
-              Output('bar2','figure'),
-              Output('map','figure'),
+              Output('pie','children'),
+              Output('bar2','children'),
+              Output('map','children'),
               Output('airport','children'),
               Output('condition','children'),
               Input('dep','value'),
@@ -231,58 +225,60 @@ def view_stats(dep, metric, clicks):
         
     airport = fr_api.get_airport_details(dep.upper().strip())
     
-    if airport['airport']['pluginData']['details']['stats']:
+    if airport:
     
-        metrics = pd.DataFrame(airport['airport']['pluginData']['details']['stats'][metric]['recent']['quantity'], 
+        if airport['airport']['pluginData']['details']['stats']:
+    
+            metrics = pd.DataFrame(airport['airport']['pluginData']['details']['stats'][metric]['recent']['quantity'], 
                           index = [0])
     
-        flights = pd.DataFrame(list(['On Time']*int(metrics['onTime']) 
+            flights = pd.DataFrame(list(['On Time']*int(metrics['onTime']) 
                                    + ['Delayed']*int(metrics['delayed'])
                                   + ['Canceled']*int(metrics['canceled'])), columns = ['Status'])
-        flights['Count'] = 1
-    else:
-        flights = pd.DataFrame(list(['N/A']),columns = ['Status'])
-        flights['Count'] = '0'
+            flights['Count'] = 1
+        else:
+            flights = pd.DataFrame(list(['N/A']),columns = ['Status'])
+            flights['Count'] = '0'
     
-    airport_type = 'destination'
-    heading = f'Where Flights are Headed'
+        airport_type = 'destination'
+        heading = f'Where Flights are Headed'
     
-    if metric == 'arrivals':
-        airport_type = 'origin'
-        heading = 'Where Flights are Arriving From'
+        if metric == 'arrivals':
+            airport_type = 'origin'
+            heading = 'Where Flights are Arriving From'
         
-    if airport['airport']['pluginData']['weather']['temp']['fahrenheit']:
-        temp = airport['airport']['pluginData']['weather']['temp']['fahrenheit']     
-    else:
-        temp = 'N/A'
+        if airport['airport']['pluginData']['weather']['temp']['fahrenheit']:
+            temp = airport['airport']['pluginData']['weather']['temp']['fahrenheit']     
+        else:
+            temp = 'N/A'
         
-    if airport['airport']['pluginData']['weather']['sky']['condition']['text']:
-        sky = airport['airport']['pluginData']['weather']['sky']['condition']['text']
-    else:
-        sky = 'N/A'
+        if airport['airport']['pluginData']['weather']['sky']['condition']['text']:
+            sky = airport['airport']['pluginData']['weather']['sky']['condition']['text']
+        else:
+            sky = 'N/A'
         
-    if airport['airport']['pluginData']['weather']['wind']['direction']['text'] == 'Variable':
-        wind_dir = airport['airport']['pluginData']['weather']['wind']['direction']['text']
-    elif airport['airport']['pluginData']['weather']['wind']['direction']['degree']:
-        wind_dir = airport['airport']['pluginData']['weather']['wind']['direction']['degree']
-    else:
-        wind_dir = 'N/A'
+        if airport['airport']['pluginData']['weather']['wind']['direction']['text'] == 'Variable':
+            wind_dir = airport['airport']['pluginData']['weather']['wind']['direction']['text']
+        elif airport['airport']['pluginData']['weather']['wind']['direction']['degree']:
+            wind_dir = airport['airport']['pluginData']['weather']['wind']['direction']['degree']
+        else:
+            wind_dir = 'N/A'
     
-    if airport['airport']['pluginData']['weather']['wind']['speed']['mph']:
-        wind_speed = airport['airport']['pluginData']['weather']['wind']['speed']['mph']
+        if airport['airport']['pluginData']['weather']['wind']['speed']['mph']:
+            wind_speed = airport['airport']['pluginData']['weather']['wind']['speed']['mph']
 
-    else:
-        wind_speed = 'N/A'
+        else:
+            wind_speed = 'N/A'
 
-    wind_info = f'Wind: {wind_dir}\u00B0 - {wind_speed} mph'
+        wind_info = f'Wind: {wind_dir}\u00B0 - {wind_speed} mph'
         
-    if airport['airport']['pluginData']['weather']['wind']['speed']['mph'] == 0:
-        wind_info = 'Wind: Calm'
+        if airport['airport']['pluginData']['weather']['wind']['speed']['mph'] == 0:
+            wind_info = 'Wind: Calm'
     
-    weather_heading = f'{dep.upper()} Weather'
-    weather_info = f'{sky} | {temp}\u00B0F | {wind_info}'
+        weather_heading = f'{dep.upper()} Weather'
+        weather_info = f'{sky} | {temp}\u00B0F | {wind_info}'
     
-    figure = px.pie(flights.groupby('Status').count().reset_index(), 
+        figure = dcc.Graph(figure = px.pie(flights.groupby('Status').count().reset_index(), 
                     values = 'Count', 
                     names = 'Status' , 
                     hole = 0.7,
@@ -293,39 +289,39 @@ def view_stats(dep, metric, clicks):
                        'Delayed':'yellow',
                        'Canceled':'red',
                         'N/A':'gray'
-                   })
+                   }))
     
-    carrier = []
-    delay_status = []
-    lat = []
-    lon = []
-    name = []
+        carrier = []
+        delay_status = []
+        lat = []
+        lon = []
+        name = []
     
-    total_pages = airport['airport']['pluginData']['schedule'][metric]['page']['total']
+        total_pages = airport['airport']['pluginData']['schedule'][metric]['page']['total']
     
-    for page in range(0,total_pages+1):
+        for page in range(0,total_pages+1):
         
-        all_ac = fr_api.get_airport_details(dep.upper().strip(), 
+            all_ac = fr_api.get_airport_details(dep.upper().strip(), 
                                             page = page)['airport']['pluginData']['schedule'][metric]['data']
         
-        live_ac = filter(lambda x: x['flight']['status']['live'] == True, all_ac)
-        for flight in live_ac:
-            if flight['flight']['airline']:
-                carrier.append(flight['flight']['airline']['short'])
-                delay_status.append(flight['flight']['status']['icon'])
-                lat.append(flight['flight']['airport'][airport_type]['position']['latitude'])
-                lon.append(flight['flight']['airport'][airport_type]['position']['longitude'])
-                name.append(flight['flight']['airport'][airport_type]['code']['iata'])
+            live_ac = filter(lambda x: x['flight']['status']['live'] == True, all_ac)
+            for flight in live_ac:
+                if flight['flight']['airline']:
+                    carrier.append(flight['flight']['airline']['short'])
+                    delay_status.append(flight['flight']['status']['icon'])
+                    lat.append(flight['flight']['airport'][airport_type]['position']['latitude'])
+                    lon.append(flight['flight']['airport'][airport_type]['position']['longitude'])
+                    name.append(flight['flight']['airport'][airport_type]['code']['iata'])
                 
-            else:
-                carrier.append('N/A')
-                delay_status.append('N/A')
+                else:
+                    carrier.append('N/A')
+                    delay_status.append('N/A')
                 
-    market = pd.DataFrame(list(zip(carrier,delay_status,lat,lon,name)),
+        market = pd.DataFrame(list(zip(carrier,delay_status,lat,lon,name)),
                           columns=['Carrier','Delay Status','Lat','Lon','Code'])
-    market['Count'] = 1
+        market['Count'] = 1
     
-    figure2 = px.bar(market.groupby(['Carrier','Delay Status']).count().reset_index().sort_values(by = 'Carrier',ascending=True), 
+        figure2 = dcc.Graph(figure = px.bar(market.groupby(['Carrier','Delay Status']).count().reset_index().sort_values(by = 'Carrier',ascending=True), 
                      x='Carrier', 
                      y='Count',
                     title = f'{dep.upper()} {metric.title()} (Airborne & On Ground)',
@@ -335,9 +331,9 @@ def view_stats(dep, metric, clicks):
                         'yellow':'yellow',
                         'red':'red',
                         'N/A':'gray'
-                    })
+                    }))
     
-    figure3 = px.scatter_geo(market.groupby(['Code','Lat','Lon']).count().reset_index(), 
+        figure3 = dcc.Graph(figure = px.scatter_geo(market.groupby(['Code','Lat','Lon']).count().reset_index(), 
                                 lat = 'Lat',
                                 lon = 'Lon',
                                 color = 'Count',
@@ -345,16 +341,24 @@ def view_stats(dep, metric, clicks):
                                 color_continuous_scale = px.colors.sequential.Sunset,
                                 title = heading
                                ).update_coloraxes(showscale=False).update_layout(mapbox_style="dark", 
-                                            mapbox_accesstoken='pk.eyJ1IjoiZGFuaWVseWFuZzc4NyIsImEiOiJjbHB6d3E1Y2IxNnF2MmpwcHRnbnVxZm94In0.D9wJEwgIDAr-V2EN5zDTJw')
+                                            mapbox_accesstoken='pk.eyJ1IjoiZGFuaWVseWFuZzc4NyIsImEiOiJjbHB6d3E1Y2IxNnF2MmpwcHRnbnVxZm94In0.D9wJEwgIDAr-V2EN5zDTJw'))
     
     
-    clicks = None
+        clicks = None
     
-    return clicks, figure, figure2, figure3, weather_heading, weather_info
+        return clicks, figure, figure2, figure3, weather_heading, weather_info
+    
+    else:
+        message1 = ''
+        message2 = ''
+        message3 = 'Airport Data Unavailable'
+        message4 = 'Weather Info Unavailable'
+        message5 = ''
+        return clicks, message1,message2,message3,message4,message5
 
 @app.callback(Output("submit2", "n_clicks"),
-              Output('bar','figure'),
-              Output('hist','figure'),
+              Output('bar','children'),
+              Output('hist','children'),
               Input('airline','value'),
               Input('submit2','n_clicks'))
 
@@ -368,29 +372,31 @@ def view_stats2(company, clicks):
         
     all_flights = fr_api.get_flights(airline = company.upper())
     
-    aircraft = []
-    alt = []
-    speed = []
-    status = []
-    for a in all_flights:
-        aircraft.append(str(a)[2:6])
-        alt.append(int(str(a)[str(a).index('Altitude') + 10 : str(a).index('Ground Speed') - 3 ]))
-        speed.append(int(str(a)[str(a).index('Ground Speed') + 14 : str(a).index('Heading') - 3 ]))
-    for a,s in zip(alt,speed):
-        if a == 0 and s == 0:
-            status.append('Parked')
-        elif a == 0 and s > 0:
-            status.append('Taxi/Takeoff')
-        elif a > 0:
-            status.append('Airborne')
-        else:
-            status.append('N/A')
-        
-    ac = pd.DataFrame(list(zip(aircraft,alt,speed)),columns=['Aircraft','Altitude','Ground Speed'])
-    ac['Count'] = 1
-    ac['Status'] = status
+    if len(all_flights)>0:
     
-    figure = px.bar(ac.groupby(['Aircraft','Status']).count().reset_index().sort_values(by='Count',ascending=False), 
+        aircraft = []
+        alt = []
+        speed = []
+        status = []
+        for a in all_flights:
+            aircraft.append(str(a)[2:6])
+            alt.append(int(str(a)[str(a).index('Altitude') + 10 : str(a).index('Ground Speed') - 3 ]))
+            speed.append(int(str(a)[str(a).index('Ground Speed') + 14 : str(a).index('Heading') - 3 ]))
+        for a,s in zip(alt,speed):
+            if a == 0 and s == 0:
+                status.append('Parked')
+            elif a == 0 and s > 0:
+                status.append('Taxi/Takeoff')
+            elif a > 0:
+                status.append('Airborne')
+            else:
+                status.append('N/A')
+        
+        ac = pd.DataFrame(list(zip(aircraft,alt,speed)),columns=['Aircraft','Altitude','Ground Speed'])
+        ac['Count'] = 1
+        ac['Status'] = status
+    
+        figure = dcc.Graph(figure = px.bar(ac.groupby(['Aircraft','Status']).count().reset_index().sort_values(by='Count',ascending=False), 
                         x='Aircraft',
                         y='Count',
                         color = 'Status',
@@ -400,15 +406,22 @@ def view_stats2(company, clicks):
                             'Airborne':'green',
                             'N/A':'gray'
                         },
-                        title='Live Aircraft')
+                        title='Live Aircraft'))
     
-    figure2 = px.histogram(ac, x='Altitude', 
+        figure2 = dcc.Graph(figure = px.histogram(ac, x='Altitude', 
                            title = 'Altitude Distribution'
-                           ).update_traces(marker_color='green')
+                           ).update_traces(marker_color='green'))
 
-    clicks = None
+        clicks = None
     
-    return clicks, figure, figure2
+        return clicks, figure, figure2
+    
+    else:
+        message1 = 'No Aircraft Data Available'
+        message2 = ''
+        return clicks, message1, message2
+    
+    
     
 
 if __name__ == '__main__':
