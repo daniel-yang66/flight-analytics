@@ -64,7 +64,7 @@ app.layout = dbc.Container([
         dbc.Row([
         dcc.Dropdown(id='city',
                      placeholder = 'Select a City',
-                     options = city_code['city'].tolist(), 
+                     options = sorted(city_code['city'].tolist()), 
                      style = {'text-align':'center',
                            'border-radius': 10,
                            'width':200,
