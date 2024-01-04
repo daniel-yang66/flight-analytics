@@ -8,7 +8,6 @@ from dash_bootstrap_templates import load_figure_template
 
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 
 app = Dash(__name__, 
                   external_stylesheets = [dbc.themes.DARKLY],
