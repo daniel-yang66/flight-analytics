@@ -352,7 +352,7 @@ def view_stats(dep, metric, clicks):
 
         if len(market) == 0:
             figure = ''
-            figure2 = 'No Departure Data Available'
+            figure2 = f'No {metric} Data Available'
             figure3 = ''
         
     except:
