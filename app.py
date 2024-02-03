@@ -1,7 +1,7 @@
 from FlightRadar24 import FlightRadar24API
 
 from dash import Dash, html, dcc
-from dash.dependencies import Output, Input
+from dash.dependencies import Output, Input, State
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 from dash_bootstrap_templates import load_figure_template
@@ -111,8 +111,9 @@ app.layout = dbc.Container([
         width = 8),
             html.Div(id='bar2', style = {'text-align':'center',
                                                         'justify-content':'center'}),]), type = 'graph', 
-                                                                                        fullscreen = True,
-                                                                                        style = {'background-color':'black'})
+                                                                        fullscreen = True,
+                                                                   style = {'background-color':'black'})
+                                                                                        
         ], style = {'display':'grid','justify-items':'center','row-gap':12})
                   
     
@@ -218,11 +219,11 @@ def get_iata(value):
               Output('map','children'),
               Output('airport','children'),
               Output('condition','children'),
-              Input('dep','value'),
-              Input('metric','value'),
+              State('dep','value'),
+              State('metric','value'),
               Input('submit','n_clicks'))
 
-def view_stats(dep, metric, clicks):
+def view_stats(dep, metric,clicks):
     if not clicks:
         raise PreventUpdate
     
@@ -371,13 +372,13 @@ def view_stats(dep, metric, clicks):
     clicks = None
     
 
-    return clicks, figure, figure2, figure3, weather_heading, weather_info
+    return  clicks, figure, figure2, figure3, weather_heading, weather_info
     
     
 @app.callback(Output("submit2", "n_clicks"),
               Output('bar','children'),
               Output('hist','children'),
-              Input('airline','value'),
+              State('airline','value'),
               Input('submit2','n_clicks'))
 
 def view_stats2(company, clicks):
