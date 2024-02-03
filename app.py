@@ -100,7 +100,7 @@ app.layout = dbc.Container([
                              'background-color':'green',
                              'color':'white'}), style = {'text-align':'center',
                                                         'justify-content':'center'}),
-        dbc.Row([
+        dcc.Loading(dbc.Row([
         dbc.Col([
             html.Div(id='pie', style = {'text-align':'center',
                                                         'justify-content':'center'})
@@ -110,10 +110,11 @@ app.layout = dbc.Container([
             ),
         width = 8),
             html.Div(id='bar2', style = {'text-align':'center',
-                                                        'justify-content':'center'}),
-        ])
-            
-        ], style = {'display':'grid','justify-items':'center','row-gap':12})      
+                                                        'justify-content':'center'}),]), type = 'graph', 
+                                                                                        fullscreen = True,
+                                                                                        style = {'background-color':'black'})
+        ], style = {'display':'grid','justify-items':'center','row-gap':12})
+                  
     
 ],
     style = {'width':200,
@@ -161,11 +162,12 @@ app.layout = dbc.Container([
                              'color':'white'}), style = {'text-align':'center',
                                                         'justify-content':'center'}),
                 
-            dbc.Row([
+            dcc.Loading(dbc.Row([
             html.Div(id='bar', style = {'text-align':'center',
                                                         'justify-content':'center'}),
             html.Div(id='hist', style = {'text-align':'center',
-                                                        'justify-content':'center'})])], style = {
+                                                        'justify-content':'center'})]), type = 'graph',
+                        fullscreen = True, style = {'background-color':'black'})], style = {
                 'display':'grid',
                 'row-gap':12,
                 'justify-items':'center'
@@ -203,6 +205,7 @@ html.Div([
                'position':'absolute',
                'top':10,
                'right':10})])
+
 @app.callback(Output('dep','options'),
              Input('city','value'))
 
@@ -352,7 +355,7 @@ def view_stats(dep, metric, clicks):
 
         if len(market) == 0:
             figure = ''
-            figure2 = f'No {metric.title()} Data Available'
+            figure2 = 'No Departure Data Available'
             figure3 = ''
         
     except:
