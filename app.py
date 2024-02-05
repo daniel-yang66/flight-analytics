@@ -1,8 +1,10 @@
 from FlightRadar24 import FlightRadar24API
 
+from datetime import datetime
+import pytz
+
 from dash import Dash, html, dcc
-from dash.dependencies import Output, Input, State
-from dash.exceptions import PreventUpdate
+from dash.dependencies import Output, Input
 import dash_bootstrap_components as dbc
 from dash_bootstrap_templates import load_figure_template
 
@@ -37,26 +39,32 @@ for a,c in zip(code, city):
     options.append(pair)
 
 app.layout = dbc.Container([
+    dcc.Interval(id = 'refresh', interval = 300*1000),
     dbc.Col(
-    html.Div(id='wx', children = [html.Div([
+    html.Div(id='wx', children = [
+        html.Div([
         html.H4(id='airport', style = {'font-weight':'bold',
                                      'font-family':'sans-serif',
                                     'font-size':20}),
-        html.P(id='condition')], style = {'text-align':'center', 'padding':5}),
+        html.P(id='condition'),
+        html.P(id='time')
+    ], style = {'text-align':'center', 'padding':5}),
     ], style = {'display':'flex',
                'justify-content':'center',
                'align-items':'center'}), width = 4),
                             dbc.Container([
     dbc.Row(
     html.H2(id='title', children="AeroStat", 
-            style = {'font-weight':'bold','font-size':40, 'font-family':'sans-serif'}),
+            style = {'font-weight':'bold','font-size':45, 'font-family':'sans-serif'}),
         style = {
                  'font-weight':'bold',
-                 'font-size':40,
                  'font-family':'sans-serif'}),
     
-        dbc.Row(html.P("Live Airport/Airline Metrics",
-                         ),style = {'font-size':16}),
+        dbc.Row(html.P("Airport | Airline Metrics",
+                         ),style = {'font-size':18}),
+                                
+        dbc.Row(html.P("Updates every 5 minutes",
+                         ),style = {'font-size':14}),
     
     dcc.Tabs(id='tabs', children = [
         dcc.Tab(label = 'Airport Stats',id='Tab 1', children = [
@@ -92,14 +100,6 @@ app.layout = dbc.Container([
                              'width':300,
                              'color':'white'}),
         
-        dbc.Row(
-        html.Button('View Stats', id='submit', 
-                    style = {
-                             'width':200,
-                             'border-radius':30,
-                             'background-color':'green',
-                             'color':'white'}), style = {'text-align':'center',
-                                                        'justify-content':'center'}),
         dcc.Loading(dbc.Row([
         dbc.Col([
             html.Div(id='pie', style = {'text-align':'center',
@@ -110,7 +110,8 @@ app.layout = dbc.Container([
             ),
         width = 8),
             html.Div(id='bar2', style = {'text-align':'center',
-                                                        'justify-content':'center'}),]), type = 'graph', 
+                                                        'justify-content':'center'})])
+                                                                , type = 'graph', 
                                                                         fullscreen = True,
                                                                    style = {'background-color':'black'})
                                                                                         
@@ -153,15 +154,7 @@ app.layout = dbc.Container([
             style = {'text-align':'center',
                      'justify-content':'center'}),
             
-            dbc.Row(
-        html.Button('View Stats', 
-                    id='submit2', 
-                    style = {
-                             'width':230,
-                             'border-radius':30,
-                             'background-color':'green',
-                             'color':'white'}), style = {'text-align':'center',
-                                                        'justify-content':'center'}),
+
                 
             dcc.Loading(dbc.Row([
             html.Div(id='bar', style = {'text-align':'center',
@@ -207,25 +200,26 @@ html.Div([
                'top':10,
                'right':10})])
 
+
+
 @app.callback(Output('dep','options'),
              Input('city','value'))
 
 def get_iata(value):
     return sorted(city_code[city_code['city'] == value]['iata'].tolist())
 
-@app.callback(Output("submit", "n_clicks"),
+@app.callback(
+              Output('time','children'),
               Output('pie','children'),
               Output('bar2','children'),
               Output('map','children'),
               Output('airport','children'),
               Output('condition','children'),
-              State('dep','value'),
-              State('metric','value'),
-              Input('submit','n_clicks'))
+              Input('dep','value'),
+              Input('metric','value'),
+             Input('refresh','n_intervals'))
 
-def view_stats(dep, metric,clicks):
-    if not clicks:
-        raise PreventUpdate
+def view_stats(dep, metric,n):
     
     try:
         
@@ -285,7 +279,7 @@ def view_stats(dep, metric,clicks):
         if wind_vel_data == 0:
             wind_info = 'Wind: Calm'
 
-        weather_heading = f'{dep.upper()} Weather'
+        weather_heading = f'{dep.upper()} Info'
         weather_info = f'{sky} | {temp}\u00B0F | {wind_info}'
 
         figure = dcc.Graph(figure = px.pie(flights.groupby('Status').count().reset_index(), 
@@ -301,8 +295,7 @@ def view_stats(dep, metric,clicks):
                             'N/A':'gray'
                        }))
 
-        carrier = []
-        delay_status = []
+        ac_type = []
         lat = []
         lon = []
         name = []
@@ -316,32 +309,24 @@ def view_stats(dep, metric,clicks):
 
             live_ac = filter(lambda x: x['flight']['status']['live'] == True, all_ac)
             for flight in live_ac:
-                if flight['flight']['airline']:
-                    carrier.append(flight['flight']['airline']['short'])
-                    delay_status.append(flight['flight']['status']['icon'])
+                if flight['flight']['aircraft']:
+                    ac_type.append(flight['flight']['aircraft']['model']['code'])
                     lat.append(flight['flight']['airport'][airport_type]['position']['latitude'])
                     lon.append(flight['flight']['airport'][airport_type]['position']['longitude'])
                     name.append(flight['flight']['airport'][airport_type]['code']['iata'])
 
                 else:
-                    carrier.append('N/A')
-                    delay_status.append('N/A')
+                    ac_type.append('N/A')
 
-        market = pd.DataFrame(list(zip(carrier,delay_status,lat,lon,name)),
-                              columns=['Carrier','Delay Status','Lat','Lon','Code'])
+        market = pd.DataFrame(list(zip(ac_type,lat,lon,name)),
+                              columns=['Aircraft','Lat','Lon','Code'])
         market['Count'] = 1
 
-        figure2 = dcc.Graph(figure = px.bar(market.groupby(['Carrier','Delay Status']).count().reset_index().sort_values(by = 'Carrier',ascending=True), 
-                         x='Carrier', 
+        figure2 = dcc.Graph(figure = px.bar(market.groupby(['Aircraft']).count().reset_index().sort_values(by = 'Count', ascending = False),                       
+                         x='Aircraft', 
                          y='Count',
                         title = f'{dep.upper()} {metric.title()} (Airborne & On Ground)',
-                        color = 'Delay Status',
-                        color_discrete_map = {
-                            'green':'green',
-                            'yellow':'yellow',
-                            'red':'red',
-                            'N/A':'gray'
-                        }))
+                        color_discrete_sequence = ['lightblue']))
 
 
         figure3 = dcc.Graph(figure = px.scatter_geo(market.groupby(['Code','Lat','Lon']).count().reset_index(), 
@@ -354,42 +339,44 @@ def view_stats(dep, metric,clicks):
                                    ).update_coloraxes(showscale=False).update_layout(mapbox_style="dark", 
                                                 mapbox_accesstoken='pk.eyJ1IjoiZGFuaWVseWFuZzc4NyIsImEiOiJjbHB6d3E1Y2IxNnF2MmpwcHRnbnVxZm94In0.D9wJEwgIDAr-V2EN5zDTJw'))
 
+        tz = airport['airport']['pluginData']['details']['timezone']['name']
+    
+        aero_tz = pytz.timezone(tz) 
+        aerodrome_time = datetime.now(aero_tz)
+        local_time = f'Time: {aerodrome_time.strftime("%H:%M")}'
+        
+        
         if len(market) == 0:
             figure = ''
             figure2 = 'No Departure Data Available'
             figure3 = ''
         
     except:
+        local_time = ''
         figure = ''
-        figure2 = 'Airport Data Currently Unavailable'
+        if dep == None:
+            figure2 = ''
+        else:
+            figure2 = 'Airport Data Currently Unavailable'
         figure3 = ''
         weather_heading = ''
         weather_info = ''
-        
-    
-    
-    
-    clicks = None
     
 
-    return  clicks, figure, figure2, figure3, weather_heading, weather_info
+    return local_time, figure, figure2, figure3, weather_heading, weather_info
     
     
-@app.callback(Output("submit2", "n_clicks"),
+@app.callback(
               Output('bar','children'),
               Output('hist','children'),
-              State('airline','value'),
-              Input('submit2','n_clicks'))
+              Input('airline','value'),
+             Input('refresh','n_intervals'))
 
-def view_stats2(company, clicks):
-    
-    if not clicks:
-        raise PreventUpdate
+def view_stats2(company, n):
+
         
-    
     try:
         
-        all_carriers = fr_api.get_airlines()
 
         all_flights = fr_api.get_flights(airline = company.upper())
 
@@ -437,14 +424,14 @@ def view_stats2(company, clicks):
             figure = 'No Aircraft Data Available'
             figure2 = ''
     except:
-        figure = 'No Aircraft Data Available'
+        if company == None:
+            figure = ''
+        else:
+            figure = 'No Aircraft Data Available'
         figure2 = ''
         
     
-    clicks = None
-        
-    
-    return clicks, figure, figure2
+    return figure, figure2
     
     
 
