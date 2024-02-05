@@ -153,8 +153,6 @@ app.layout = dbc.Container([
                            'width':250})], 
             style = {'text-align':'center',
                      'justify-content':'center'}),
-            
-
                 
             dcc.Loading(dbc.Row([
             html.Div(id='bar', style = {'text-align':'center',
@@ -240,10 +238,20 @@ def view_stats(dep, metric,n):
 
         airport_type = 'destination'
         heading = f'Where Flights are Headed'
+        status_word = 'At Gate (On Time)'
+        
 
         if metric == 'arrivals':
             airport_type = 'origin'
             heading = 'Where Flights are Arriving From'
+            status_word = 'Enroute (On Time)'
+            
+        def status_translate(status):
+            if status == 'estimated':
+                return status_word
+            else:
+                return status.title()
+            
 
         temp_data = airport['airport']['pluginData']['weather']['temp']['fahrenheit']
         cond_data = airport['airport']['pluginData']['weather']['sky']['condition']['text']
@@ -296,6 +304,7 @@ def view_stats(dep, metric,n):
                        }))
 
         ac_type = []
+        status = []
         lat = []
         lon = []
         name = []
@@ -311,6 +320,7 @@ def view_stats(dep, metric,n):
             for flight in live_ac:
                 if flight['flight']['aircraft']:
                     ac_type.append(flight['flight']['aircraft']['model']['code'])
+                    status.append(flight['flight']['status']['generic']['status']['text'])
                     lat.append(flight['flight']['airport'][airport_type]['position']['latitude'])
                     lon.append(flight['flight']['airport'][airport_type]['position']['longitude'])
                     name.append(flight['flight']['airport'][airport_type]['code']['iata'])
@@ -318,15 +328,20 @@ def view_stats(dep, metric,n):
                 else:
                     ac_type.append('N/A')
 
-        market = pd.DataFrame(list(zip(ac_type,lat,lon,name)),
-                              columns=['Aircraft','Lat','Lon','Code'])
+        market = pd.DataFrame(list(zip(ac_type,status,lat,lon,name)),
+                              columns=['Aircraft','Status','Lat','Lon','Code'])
+        
+        market['Status'] = market['Status'].apply(status_translate)
+            
+        
         market['Count'] = 1
 
-        figure2 = dcc.Graph(figure = px.bar(market.groupby(['Aircraft']).count().reset_index().sort_values(by = 'Count', ascending = False),                       
+        figure2 = dcc.Graph(figure = px.bar(market.groupby(['Aircraft','Status']).count().reset_index().sort_values(by = 'Count', ascending = False),                       
                          x='Aircraft', 
                          y='Count',
-                        title = f'{dep.upper()} {metric.title()} (Airborne & On Ground)',
-                        color_discrete_sequence = ['lightblue']))
+                        title = f'{dep.upper()} {metric.title()}',
+                        color = 'Status',
+                        color_discrete_sequence = px.colors.qualitative.T10))
 
 
         figure3 = dcc.Graph(figure = px.scatter_geo(market.groupby(['Code','Lat','Lon']).count().reset_index(), 
@@ -373,10 +388,8 @@ def view_stats(dep, metric,n):
              Input('refresh','n_intervals'))
 
 def view_stats2(company, n):
-
         
     try:
-        
 
         all_flights = fr_api.get_flights(airline = company.upper())
 
