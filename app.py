@@ -59,9 +59,6 @@ app.layout = dbc.Container([
         style = {
                  'font-weight':'bold',
                  'font-family':'sans-serif'}),
-    
-        dbc.Row(html.P("Airport | Airline Metrics",
-                         ),style = {'font-size':18}),
                                 
         dbc.Row(html.P("Updates every 5 minutes",
                          ),style = {'font-size':14}),
@@ -69,24 +66,7 @@ app.layout = dbc.Container([
     dcc.Tabs(id='tabs', children = [
         dcc.Tab(label = 'Airport Stats',id='Tab 1', children = [
             dbc.Row([
-        dbc.Row([
-        dcc.Dropdown(id='city',
-                     placeholder = 'Select a City',
-                     options = sorted(city_code['city'].tolist()), 
-                     style = {'text-align':'center',
-                           'border-radius': 10,
-                           'width':200,
-                          'color':'black'}),
-        dcc.Dropdown(id='dep',
-                     placeholder = 'Select Airport',
-                  style = {'text-align':'center',
-                           'border-radius': 10,
-                           'width':200,
-                          'color':'black'})], 
-            style = {'text-align':'center',
-                    'justify-content':'center'}),
-        
-            dcc.RadioItems(id='metric',options = [
+                dcc.RadioItems(id='metric',options = [
                 {'label':'Departure Metrics','value':'departures'},
                 {'label':'Arrival Metrics','value':'arrivals'}
                 
@@ -99,7 +79,24 @@ app.layout = dbc.Container([
                                     'gap':12,
                              'width':300,
                              'color':'white'}),
-        
+        dbc.Row([
+        dcc.Dropdown(id='city',
+                     placeholder = '1. Select a City',
+                     options = sorted(city_code['city'].tolist()), 
+                     style = {'text-align':'center',
+                           'border-radius': 10,
+                           'width':200,
+                          'color':'black'}),
+        dcc.Dropdown(id='dep',
+                     placeholder = '2. Select Airport',
+                  style = {'text-align':'center',
+                           'border-radius': 10,
+                           'width':200,
+                          'color':'black'})], 
+            style = {'text-align':'center',
+                    'justify-content':'center'}),
+    
+    
         dcc.Loading(dbc.Row([
         dbc.Col([
             html.Div(id='pie', style = {'text-align':'center',
@@ -153,6 +150,7 @@ app.layout = dbc.Container([
                            'width':250})], 
             style = {'text-align':'center',
                      'justify-content':'center'}),
+            
                 
             dcc.Loading(dbc.Row([
             html.Div(id='bar', style = {'text-align':'center',
@@ -317,6 +315,7 @@ def view_stats(dep, metric,n):
                                                 page = page)['airport']['pluginData']['schedule'][metric]['data']
 
             live_ac = filter(lambda x: x['flight']['status']['live'] == True, all_ac)
+            
             for flight in live_ac:
                 if flight['flight']['aircraft']:
                     ac_type.append(flight['flight']['aircraft']['model']['code'])
@@ -332,11 +331,13 @@ def view_stats(dep, metric,n):
                               columns=['Aircraft','Status','Lat','Lon','Code'])
         
         market['Status'] = market['Status'].apply(status_translate)
-            
         
         market['Count'] = 1
+        
+        df_agg1 = market.groupby(['Aircraft','Status']).count().reset_index()
 
-        figure2 = dcc.Graph(figure = px.bar(market.groupby(['Aircraft','Status']).count().reset_index().sort_values(by = 'Count', ascending = False),                       
+        figure2 = dcc.Graph(figure = px.bar(market.groupby(['Aircraft','Status']).count().reset_index()
+                                            .sort_values(by = 'Count', ascending = False),                       
                          x='Aircraft', 
                          y='Count',
                         title = f'{dep.upper()} {metric.title()}',
@@ -355,7 +356,6 @@ def view_stats(dep, metric,n):
                                                 mapbox_accesstoken='pk.eyJ1IjoiZGFuaWVseWFuZzc4NyIsImEiOiJjbHB6d3E1Y2IxNnF2MmpwcHRnbnVxZm94In0.D9wJEwgIDAr-V2EN5zDTJw'))
 
         tz = airport['airport']['pluginData']['details']['timezone']['name']
-    
         aero_tz = pytz.timezone(tz) 
         aerodrome_time = datetime.now(aero_tz)
         local_time = f'Time: {aerodrome_time.strftime("%H:%M")}'
@@ -388,7 +388,7 @@ def view_stats(dep, metric,n):
              Input('refresh','n_intervals'))
 
 def view_stats2(company, n):
-        
+
     try:
 
         all_flights = fr_api.get_flights(airline = company.upper())
@@ -416,17 +416,16 @@ def view_stats2(company, n):
             ac = pd.DataFrame(list(zip(aircraft,alt,speed)),columns=['Aircraft','Altitude','Ground Speed'])
             ac['Count'] = 1
             ac['Status'] = status
+            
+            ac_agg1 = ac.groupby(['Aircraft','Status']).count().reset_index()
 
-            figure = dcc.Graph(figure = px.bar(ac.groupby(['Aircraft','Status']).count().reset_index().sort_values(by='Count',ascending=False), 
+            figure = dcc.Graph(figure = px.bar(ac.groupby(['Aircraft','Status']).count().reset_index()
+                                            .sort_values(by='Count',ascending=False), 
                             x='Aircraft',
                             y='Count',
                             color = 'Status',
-                            color_discrete_map = {
-                                'Parked':'blue',
-                                'Taxi/Takeoff':'yellow',
-                                'Airborne':'green',
-                                'N/A':'gray'
-                            },
+
+                            color_discrete_sequence = px.colors.qualitative.T10,
                             title='Live Aircraft'))
 
             figure2 = dcc.Graph(figure = px.histogram(ac, x='Altitude', 
