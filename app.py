@@ -95,6 +95,18 @@ app.layout = dbc.Container([
                           'color':'black'})], 
             style = {'text-align':'center',
                     'justify-content':'center'}),
+            dbc.Row([
+                dcc.Dropdown(id='dep-airline',
+                     placeholder = '3. Select Airline',
+                      options = icaos,
+                        value = 'UAL',
+                  style = {'text-align':'center',
+                           'border-radius': 10,
+                           'width':350,
+                          'color':'black'})],
+                style = {'text-align':'center',
+                    'justify-content':'center'}
+            ),
     
         dcc.Loading(dbc.Row([
         dbc.Col([
@@ -147,7 +159,7 @@ app.layout = dbc.Container([
                   style = {'text-align':'center',
                            'color':'black',
                            'border-radius': 10,
-                           'width':250})], 
+                           'width':350})], 
             style = {'text-align':'center',
                      'justify-content':'center'}),
                 
@@ -214,10 +226,11 @@ def get_iata(value):
               Output('airport','children'),
               Output('condition','children'),
               Input('dep','value'),
+              State('dep-airline','value'),
               State('metric','value'),
              Input('refresh','n_intervals'))
 
-def view_stats(dep, metric,n):
+def view_stats(dep, airline, metric,n):
     
     try:
         
@@ -241,20 +254,11 @@ def view_stats(dep, metric,n):
             flights['Count'] = '0'
 
         airport_type = 'destination'
-        heading = f'Where Flights are Headed'
-        status_word = 'At Gate (On Time)'
-        
+        heading = f'Live {airline} Destinations'        
 
         if metric == 'arrivals':
             airport_type = 'origin'
-            heading = 'Where Flights are Arriving From'
-            status_word = 'Enroute (On Time)'
-            
-        def status_translate(status):
-            if status == 'estimated':
-                return status_word
-            else:
-                return status.title()
+            heading = f'Live {airline} Arrivals'
             
 
         temp_data = airport['airport']['pluginData']['weather']['temp']['celsius']
@@ -298,7 +302,7 @@ def view_stats(dep, metric,n):
                         values = 'Count', 
                         names = 'Status' , 
                         hole = 0.7,
-                        title = f"Today's Recent {metric.title()[0:-1]} Metrics",
+                        title = f"{dep.upper()} Recent {metric.title()[0:-1]} Metrics",
                         color = 'Status',
                         color_discrete_map = {
                            'On Time':'green',
@@ -310,10 +314,10 @@ def view_stats(dep, metric,n):
         
 
         ac_type = []
-        status = []
         lat = []
         lon = []
         name = []
+        country = []
 
         total_pages = airport['airport']['pluginData']['schedule'][metric]['page']['total']
 
@@ -322,32 +326,42 @@ def view_stats(dep, metric,n):
             all_ac = fr_api.get_airport_details(dep.upper().strip(), 
                                                 page = page)['airport']['pluginData']['schedule'][metric]['data']
 
-            live_ac = filter(lambda x: x['flight']['status']['live'] == True, all_ac)
+            airline_regs = []
+            airline_live_flights = fr_api.get_flights(airline)
+            for airplane in airline_live_flights:
+                details = str(airplane)
+                airline_regs.append(details[8:details.index('-')-1])
+            live_ac = []
+        
+            for ac in all_ac:
+                if ac['flight']['owner'] and ac['flight']['aircraft']:
+                    if ac['flight']['owner']['code']['icao'] == airline and ac['flight']['aircraft']['registration'] in airline_regs:
+                        live_ac.append(ac)
+                
+            
             
             for flight in live_ac:
                 if flight['flight']['aircraft']:
                     ac_type.append(flight['flight']['aircraft']['model']['code'])
-                    status.append(flight['flight']['status']['generic']['status']['text'])
                     lat.append(flight['flight']['airport'][airport_type]['position']['latitude'])
                     lon.append(flight['flight']['airport'][airport_type]['position']['longitude'])
+                    country.append(flight['flight']['airport'][airport_type]['position']['country']['name'])
                     name.append(flight['flight']['airport'][airport_type]['code']['iata'])
 
                 else:
                     ac_type.append('N/A')
 
-        market = pd.DataFrame(list(zip(ac_type,status,lat,lon,name)),
-                              columns=['Aircraft','Status','Lat','Lon','Code'])
-        
-        market['Status'] = market['Status'].apply(status_translate)
-        
+        market = pd.DataFrame(list(zip(ac_type,lat,lon,country,name)),
+                              columns=['Aircraft','Lat','Lon','Country','Code'])
+                
         market['Count'] = 1
 
-        figure2 = dcc.Graph(figure = px.bar(market.groupby(['Aircraft','Status']).count().reset_index()
+        figure2 = dcc.Graph(figure = px.bar(market.groupby(['Aircraft','Country']).count().reset_index()
                                             .sort_values(by = 'Count', ascending = False),                       
                          x='Aircraft', 
                          y='Count',
-                        title = f'{dep.upper()} {metric.title()}',
-                        color = 'Status',
+                        color = 'Country',
+                        title = f'{airline.upper()} {metric.title()}',
                         color_discrete_sequence = px.colors.qualitative.T10))
 
 
@@ -358,8 +372,8 @@ def view_stats(dep, metric,n):
                                     hover_name = 'Code',
                                     color_continuous_scale = px.colors.sequential.Sunset,
                                     title = heading
-                                   ).update_coloraxes(showscale=False).update_layout(mapbox_style="dark", 
-                                                mapbox_accesstoken='pk.eyJ1IjoiZGFuaWVseWFuZzc4NyIsImEiOiJjbHB6d3E1Y2IxNnF2MmpwcHRnbnVxZm94In0.D9wJEwgIDAr-V2EN5zDTJw'))
+                                   ).update_coloraxes(showscale=False).update_layout(mapbox_style = 'dark',
+                                                                                    mapbox_accesstoken = 'pk.eyJ1IjoiZGFuaWVseWFuZzc4NyIsImEiOiJjbHB6d3E1Y2IxNnF2MmpwcHRnbnVxZm94In0.D9wJEwgIDAr-V2EN5zDTJw'))
 
         tz = airport['airport']['pluginData']['details']['timezone']['name']
         tz_abb = airport['airport']['pluginData']['details']['timezone']['abbr']
@@ -453,7 +467,7 @@ def view_stats2(company, n):
     
 
 if __name__ == '__main__':
-    app.run_server(debug = False)
+    app.run_server(debug=False)
 
 
 
