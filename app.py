@@ -254,11 +254,11 @@ def view_stats(dep, airline, metric,n):
             flights['Count'] = '0'
 
         airport_type = 'destination'
-        heading = f'Scheduled {airline} Destinations'        
+        heading = f'Scheduled {airline} Destinations (Next 24H)'        
 
         if metric == 'arrivals':
             airport_type = 'origin'
-            heading = f'Scheduled {airline} Arrivals'
+            heading = f'Scheduled {airline} Arrivals (Next 24H)'
             
 
         temp_data = airport['airport']['pluginData']['weather']['temp']['celsius']
@@ -330,7 +330,7 @@ def view_stats(dep, airline, metric,n):
 
             for ac in all_ac:
                 if ac['flight']['owner'] and ac['flight']['aircraft'] and ac['flight']['time']:
-                    if ac['flight']['time']['scheduled']['departure'] > int(time()) and ac['flight']['airline']['code']['icao'] == airline:
+                    if ac['flight']['time']['scheduled']['departure'] - int(time())>0 and ac['flight']['time']['scheduled']['departure'] - int(time())<86400 and ac['flight']['airline']['code']['icao'] == airline:
                         scheduled_ac.append(ac)
                 
             
@@ -355,7 +355,7 @@ def view_stats(dep, airline, metric,n):
                          x='Aircraft', 
                          y='Count',
                         color = 'Country',
-                        title = f'{airline.upper()} Scheduled {metric.title()}',
+                        title = f'{airline.upper()} Scheduled {metric.title()} (Next 24H)',
                         color_discrete_sequence = px.colors.qualitative.T10))
 
 
