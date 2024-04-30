@@ -2,7 +2,7 @@ from FlightRadar24 import FlightRadar24API
 
 from datetime import datetime
 import pytz
-
+from time import time
 from dash import Dash, html, dcc
 from dash.dependencies import Output, Input, State
 import dash_bootstrap_components as dbc
@@ -254,11 +254,11 @@ def view_stats(dep, airline, metric,n):
             flights['Count'] = '0'
 
         airport_type = 'destination'
-        heading = f'Live {airline} Destinations'        
+        heading = f'Scheduled {airline} Destinations'        
 
         if metric == 'arrivals':
             airport_type = 'origin'
-            heading = f'Live {airline} Arrivals'
+            heading = f'Scheduled {airline} Arrivals'
             
 
         temp_data = airport['airport']['pluginData']['weather']['temp']['celsius']
@@ -318,29 +318,23 @@ def view_stats(dep, airline, metric,n):
         lon = []
         name = []
         country = []
+        
 
         total_pages = airport['airport']['pluginData']['schedule'][metric]['page']['total']
 
         for page in range(0,total_pages+1):
+            scheduled_ac = []
 
             all_ac = fr_api.get_airport_details(dep.upper().strip(), 
                                                 page = page)['airport']['pluginData']['schedule'][metric]['data']
 
-            airline_regs = []
-            airline_live_flights = fr_api.get_flights(airline)
-            for airplane in airline_live_flights:
-                details = str(airplane)
-                airline_regs.append(details[8:details.index('-')-1])
-            live_ac = []
-        
             for ac in all_ac:
-                if ac['flight']['owner'] and ac['flight']['aircraft']:
-                    if ac['flight']['owner']['code']['icao'] == airline and ac['flight']['aircraft']['registration'] in airline_regs:
-                        live_ac.append(ac)
+                if ac['flight']['owner'] and ac['flight']['aircraft'] and ac['flight']['time']:
+                    if ac['flight']['time']['scheduled']['departure'] > int(time()) and ac['flight']['airline']['code']['icao'] == airline:
+                        scheduled_ac.append(ac)
                 
             
-            
-            for flight in live_ac:
+            for flight in scheduled_ac:
                 if flight['flight']['aircraft']:
                     ac_type.append(flight['flight']['aircraft']['model']['code'])
                     lat.append(flight['flight']['airport'][airport_type]['position']['latitude'])
@@ -361,7 +355,7 @@ def view_stats(dep, airline, metric,n):
                          x='Aircraft', 
                          y='Count',
                         color = 'Country',
-                        title = f'{airline.upper()} {metric.title()}',
+                        title = f'{airline.upper()} Scheduled {metric.title()}',
                         color_discrete_sequence = px.colors.qualitative.T10))
 
 
@@ -384,7 +378,7 @@ def view_stats(dep, airline, metric,n):
         
         if len(market) == 0:
             figure = ''
-            figure2 = 'No Departure Data Available'
+            figure2 = 'No Data Available'
             figure3 = ''
         
     except:
