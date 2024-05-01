@@ -345,7 +345,7 @@ def view_stats(dep,hours,airline, metric,n):
                                                 page = page)['airport']['pluginData']['schedule'][metric]['data']
 
             for ac in all_ac:
-                if ac['flight']['owner'] and ac['flight']['aircraft'] and ac['flight']['time']:
+                if ac['flight']['airline'] and ac['flight']['aircraft'] and ac['flight']['time']:
                     if ac['flight']['time']['scheduled']['departure'] - int(time())>0 and ac['flight']['time']['scheduled']['departure'] - int(time())<=hours*3600 and ac['flight']['airline']['code']['icao'] == airline:
                         scheduled_ac.append(ac)
                 
