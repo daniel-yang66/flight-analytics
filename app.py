@@ -19,8 +19,6 @@ server = app.server
 
 load_figure_template('slate')
 
-city_code = pd.read_csv('city_code.txt', delimiter = ':').dropna(subset = ['iata'])
-
 fr_api = FlightRadar24API()
 
 all_carr = fr_api.get_airlines()
