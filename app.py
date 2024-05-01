@@ -60,11 +60,9 @@ app.layout = dbc.Container([
                  'font-weight':'bold',
                  'font-family':'sans-serif'}),
                                 
-        dbc.Row(html.P("Updates every 5 minutes",
-                         ),style = {'font-size':14}),
     
     dcc.Tabs(id='tabs', children = [
-        dcc.Tab(label = 'Airport Stats',id='Tab 1', children = [
+        dcc.Tab(label = 'Scheduled Flights',id='Tab 1', children = [
             dbc.Row([
                 dcc.RadioItems(id='metric',options = [
                 {'label':'Departure Metrics','value':'departures'},
@@ -82,16 +80,16 @@ app.layout = dbc.Container([
         dbc.Row([
         dcc.Dropdown(id='city',
                      placeholder = '1. Select a City',
-                     options = sorted(city_code['city'].tolist()), 
+                     options = sorted(city_code['city'].tolist()),
                      style = {'text-align':'center',
                            'border-radius': 10,
-                           'width':200,
+                           'width':250,
                           'color':'black'}),
         dcc.Dropdown(id='dep',
                      placeholder = '2. Select Airport',
                   style = {'text-align':'center',
                            'border-radius': 10,
-                           'width':200,
+                           'width':250,
                           'color':'black'})], 
             style = {'text-align':'center',
                     'justify-content':'center'}),
@@ -106,6 +104,23 @@ app.layout = dbc.Container([
                           'color':'black'})],
                 style = {'text-align':'center',
                     'justify-content':'center'}
+            ),
+                dbc.Row([
+                dcc.Slider(1,24,
+                           step = None,
+                           id='hours',
+                           marks = {
+                               1: {'label':'Next 1H','style':{'font-weight':'bold','color':'white'}},
+                               5: {'label':'Next 5H','style':{'font-weight':'bold','color':'white'}},
+                               10: {'label':'Next 10H','style':{'font-weight':'bold','color':'white'}},
+                               15: {'label':'Next 15H','style':{'font-weight':'bold','color':'white'}},
+                               20: {'label':'Next 20H','style':{'font-weight':'bold','color':'white'}},
+                               24: {'label':'Next 24H','style':{'font-weight':'bold','color':'white'}}  
+                           },
+                           value = 5
+                           
+                     )],
+                style = {'width':900}
             ),
     
         dcc.Loading(dbc.Row([
@@ -226,11 +241,12 @@ def get_iata(value):
               Output('airport','children'),
               Output('condition','children'),
               Input('dep','value'),
+              Input('hours','value'),
               State('dep-airline','value'),
               State('metric','value'),
              Input('refresh','n_intervals'))
 
-def view_stats(dep, airline, metric,n):
+def view_stats(dep,hours,airline, metric,n):
     
     try:
         
@@ -254,11 +270,11 @@ def view_stats(dep, airline, metric,n):
             flights['Count'] = '0'
 
         airport_type = 'destination'
-        heading = f'Scheduled {airline} Destinations (Next 24H)'        
+        heading = f'Scheduled {airline} Destinations (Next {hours}H)'        
 
         if metric == 'arrivals':
             airport_type = 'origin'
-            heading = f'Scheduled {airline} Arrivals (Next 24H)'
+            heading = f'Scheduled {airline} Arrivals (Next {hours}H)'
             
 
         temp_data = airport['airport']['pluginData']['weather']['temp']['celsius']
@@ -330,7 +346,7 @@ def view_stats(dep, airline, metric,n):
 
             for ac in all_ac:
                 if ac['flight']['owner'] and ac['flight']['aircraft'] and ac['flight']['time']:
-                    if ac['flight']['time']['scheduled']['departure'] - int(time())>0 and ac['flight']['time']['scheduled']['departure'] - int(time())<86400 and ac['flight']['airline']['code']['icao'] == airline:
+                    if ac['flight']['time']['scheduled']['departure'] - int(time())>0 and ac['flight']['time']['scheduled']['departure'] - int(time())<=hours*3600 and ac['flight']['airline']['code']['icao'] == airline:
                         scheduled_ac.append(ac)
                 
             
@@ -355,7 +371,7 @@ def view_stats(dep, airline, metric,n):
                          x='Aircraft', 
                          y='Count',
                         color = 'Country',
-                        title = f'{airline.upper()} Scheduled {metric.title()} (Next 24H)',
+                        title = f'{airline.upper()} Scheduled {metric.title()} (Next {hours}H)',
                         color_discrete_sequence = px.colors.qualitative.T10))
 
 
