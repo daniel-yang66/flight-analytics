@@ -39,7 +39,7 @@ for a,c in zip(code, city):
     options.append(pair)
 
 app.layout = dbc.Container([
-    dcc.Interval(id = 'refresh', interval = 300*1000),
+    dcc.Interval(id = 'refresh', interval = 600*1000),
     dbc.Col(
     html.Div(id='wx', children = [
         html.Div([
@@ -241,7 +241,7 @@ def get_iata(value):
               Output('airport','children'),
               Output('condition','children'),
               Input('dep','value'),
-              Input('hours','value'),
+              State('hours','value'),
               State('dep-airline','value'),
               State('metric','value'),
              Input('refresh','n_intervals'))
