@@ -24,19 +24,20 @@ city_code = pd.read_csv('city_code.txt', delimiter = ':').dropna(subset = ['iata
 fr_api = FlightRadar24API()
 
 all_carr = fr_api.get_airlines()
+all_airp = fr_api.get_airports()
 
 icaos = []
 
 for carr in all_carr:
     pair = {'label':carr['Name'], 'value': carr['ICAO']}
     icaos.append(pair)
-   
-city = city_code['city'].tolist()
-code = city_code['iata'].tolist()
 options = []
-for a,c in zip(code, city):
-    pair = {'label':a,'value':c}
-    options.append(pair)
+for airp in all_airp:
+    airp_str = str(airp)
+    pair2 = {'label': airp_str[8:airp_str.index('-') - 1],'value':airp_str[2:6]}
+    options.append(pair2)
+   
+
 
 app.layout = dbc.Container([
     dcc.Interval(id = 'refresh', interval = 600*1000),
@@ -78,33 +79,16 @@ app.layout = dbc.Container([
                              'width':300,
                              'color':'white'}),
         dbc.Row([
-        dcc.Dropdown(id='city',
-                     placeholder = '1. Select a City',
-                     options = sorted(city_code['city'].tolist()),
+        dcc.Dropdown(id='airp',
+                     placeholder = 'Search Airport',
+                     options = options,
                      style = {'text-align':'center',
                            'border-radius': 10,
-                           'width':250,
-                          'color':'black'}),
-        dcc.Dropdown(id='dep',
-                     placeholder = '2. Select Airport',
-                  style = {'text-align':'center',
-                           'border-radius': 10,
-                           'width':250,
+                           'width':400,
                           'color':'black'})], 
             style = {'text-align':'center',
                     'justify-content':'center'}),
-            dbc.Row([
-                dcc.Dropdown(id='dep-airline',
-                     placeholder = '3. Select Airline',
-                      options = icaos,
-                        value = 'UAL',
-                  style = {'text-align':'center',
-                           'border-radius': 10,
-                           'width':350,
-                          'color':'black'})],
-                style = {'text-align':'center',
-                    'justify-content':'center'}
-            ),
+                
                 dbc.Row([
                 dcc.Slider(1,24,
                            step = None,
@@ -226,13 +210,6 @@ html.Div([
                'right':10})])
 
 
-
-@app.callback(Output('dep','options'),
-             Input('city','value'))
-
-def get_iata(value):
-    return sorted(city_code[city_code['city'] == value]['iata'].drop_duplicates().tolist())
-
 @app.callback(
               Output('time','children'),
               Output('pie','children'),
@@ -240,13 +217,12 @@ def get_iata(value):
               Output('map','children'),
               Output('airport','children'),
               Output('condition','children'),
-              Input('dep','value'),
+              Input('airp','value'),
               State('hours','value'),
-              State('dep-airline','value'),
               State('metric','value'),
              Input('refresh','n_intervals'))
 
-def view_stats(dep,hours,airline, metric,n):
+def view_stats(dep,hours, metric,n):
     
     try:
         
@@ -270,11 +246,11 @@ def view_stats(dep,hours,airline, metric,n):
             flights['Count'] = '0'
 
         airport_type = 'destination'
-        heading = f'Scheduled {airline} Destinations (Next {hours}H)'        
+        heading = f'Scheduled Destinations (Next {hours}H)'        
 
         if metric == 'arrivals':
             airport_type = 'origin'
-            heading = f'Scheduled {airline} Arrivals (Next {hours}H)'
+            heading = f'Scheduled Arrivals (Next {hours}H)'
             
 
         temp_data = airport['airport']['pluginData']['weather']['temp']['celsius']
@@ -329,11 +305,10 @@ def view_stats(dep,hours,airline, metric,n):
                        }))
         
 
-        ac_type = []
+        carrier = []
         lat = []
         lon = []
         name = []
-        country = []
         
 
         total_pages = airport['airport']['pluginData']['schedule'][metric]['page']['total']
@@ -345,41 +320,39 @@ def view_stats(dep,hours,airline, metric,n):
                                                 page = page)['airport']['pluginData']['schedule'][metric]['data']
 
             for ac in all_ac:
-                if ac['flight']['airline'] and ac['flight']['aircraft'] and ac['flight']['time']:
-                    if ac['flight']['time']['scheduled']['departure'] - int(time())>0 and ac['flight']['time']['scheduled']['departure'] - int(time())<=hours*3600 and ac['flight']['airline']['code']['icao'] == airline:
-                        scheduled_ac.append(ac)
-                
+                if ac['flight']['airline'] and ac['flight']['time'] and ac['flight']['airport']:
+                    if ac['flight']['time']['scheduled']['departure'] - int(time())>0 and ac['flight']['time']['scheduled']['departure'] - int(time())<=hours*3600:
+                        scheduled_ac.append(ac)   
             
             for flight in scheduled_ac:
-                if flight['flight']['aircraft']:
-                    ac_type.append(flight['flight']['aircraft']['model']['code'])
-                    lat.append(flight['flight']['airport'][airport_type]['position']['latitude'])
-                    lon.append(flight['flight']['airport'][airport_type]['position']['longitude'])
-                    country.append(flight['flight']['airport'][airport_type]['position']['country']['name'])
-                    name.append(flight['flight']['airport'][airport_type]['code']['iata'])
+                carrier.append(flight['flight']['airline']['name'])
+                lat.append(flight['flight']['airport'][airport_type]['position']['latitude'])
+                lon.append(flight['flight']['airport'][airport_type]['position']['longitude'])
+                name.append(flight['flight']['airport'][airport_type]['code']['iata'])
 
-                else:
-                    ac_type.append('N/A')
 
-        market = pd.DataFrame(list(zip(ac_type,lat,lon,country,name)),
-                              columns=['Aircraft','Lat','Lon','Country','Code'])
+        market = pd.DataFrame(list(zip(carrier,lat,lon,name)),
+                              columns=['Airline','Lat','Lon','Airport'])
                 
         market['Count'] = 1
+        top_10_lst = []
+        top_10 = dict(market['Airport'].value_counts().head(10))
+        for k,v in top_10.items():
+            top_10_lst.append(k)
 
-        figure2 = dcc.Graph(figure = px.bar(market.groupby(['Aircraft','Country']).count().reset_index()
-                                            .sort_values(by = 'Count', ascending = False),                       
-                         x='Aircraft', 
+        figure2 = dcc.Graph(figure = px.bar(market[market['Airport'].isin(top_10_lst)].groupby(['Airport','Airline']).sum().reset_index(),                       
+                         x='Airport', 
                          y='Count',
-                        color = 'Country',
-                        title = f'{airline.upper()} Scheduled {metric.title()} (Next {hours}H)',
-                        color_discrete_sequence = px.colors.qualitative.T10))
+                        color = 'Airline',
+                        title = f'Top 10 Airports (Next {hours}H)',
+                        color_discrete_sequence = px.colors.qualitative.T10).update_xaxes(tickangle = -50))
 
 
-        figure3 = dcc.Graph(figure = px.scatter_geo(market.groupby(['Code','Lat','Lon']).count().reset_index(), 
+        figure3 = dcc.Graph(figure = px.scatter_geo(market.groupby(['Airport','Lat','Lon']).count().reset_index(), 
                                     lat = 'Lat',
                                     lon = 'Lon',
                                     color = 'Count',
-                                    hover_name = 'Code',
+                                    hover_name = 'Airport',
                                     color_continuous_scale = px.colors.sequential.Sunset,
                                     title = heading
                                    ).update_coloraxes(showscale=False).update_layout(mapbox_style = 'dark',
