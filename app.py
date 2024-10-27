@@ -4,7 +4,7 @@ from datetime import datetime
 import pytz
 from time import time
 from dash import Dash, html, dcc
-from dash.dependencies import Output, Input, State
+from dash.dependencies import Output, Input
 import dash_bootstrap_components as dbc
 from dash_bootstrap_templates import load_figure_template
 
@@ -246,7 +246,7 @@ def view_stats(dep,hours, metric,n):
         airport_type = 'destination'
         heading = f'Scheduled Destinations (Next {hours}H)'        
 
-        if metric == 'Arrivals':
+        if metric == 'arrivals':
             airport_type = 'origin'
             heading = f'Scheduled Arrivals (Next {hours}H)'
             
@@ -336,6 +336,8 @@ def view_stats(dep,hours, metric,n):
                         dep_arr_time.append(datetime.strptime(datetime.fromtimestamp(flight['flight']['time']['scheduled']['arrival']).astimezone(aero_tz).strftime('%Y-%m-%d %H'),'%Y-%m-%d %H'))
 
 
+                
+
         market = pd.DataFrame(list(zip(dep_arr_time,lat,lon,name)),
                               columns=['Time','Lat','Lon','Airport'])
         
@@ -350,7 +352,7 @@ def view_stats(dep,hours, metric,n):
                          x='Time', 
                          y='Flights',
                         markers=True,
-                        title = f'{metric.title()} per Hour (Next {hours}H)').update_xaxes(tickangle = -50).update_yaxes(rangemode='tozero').update_traces(line_color='#5b92e5', line_width=5))
+                        title = f'Active {metric.title()}/Hour (Next {hours}H)').update_xaxes(tickangle = -50).update_yaxes(rangemode='tozero').update_traces(line_color='#5b92e5', line_width=5,marker_size=12, marker_color='lightgreen'))
         figure3 = dcc.Graph(figure = px.scatter_geo(market.groupby(['Airport','Lat','Lon']).count().reset_index(), 
                                     lat = 'Lat',
                                     lon = 'Lon',
@@ -453,10 +455,6 @@ def view_stats2(company, n):
 
 if __name__ == '__main__':
     app.run_server(debug=False)
-
-
-
-
 
 
 
