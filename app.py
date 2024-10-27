@@ -352,7 +352,7 @@ def view_stats(dep,hours, metric,n):
                          x='Time', 
                          y='Flights',
                         markers=True,
-                        title = f'Active {metric.title()}/Hour (Next {hours}H)').update_xaxes(tickangle = -50).update_yaxes(rangemode='tozero').update_traces(line_color='#5b92e5', line_width=5,marker_size=12, marker_color='lightgreen'))
+                        title = f'{metric.title()}/Hour (Next {hours}H)').update_xaxes(tickangle = -50).update_yaxes(rangemode='tozero').update_traces(line_color='#5b92e5', line_width=5,marker_size=12, marker_color='lightgreen'))
         figure3 = dcc.Graph(figure = px.scatter_geo(market.groupby(['Airport','Lat','Lon']).count().reset_index(), 
                                     lat = 'Lat',
                                     lon = 'Lon',
