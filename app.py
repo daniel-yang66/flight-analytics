@@ -4,7 +4,7 @@ from datetime import datetime
 import pytz
 from time import time
 from dash import Dash, html, dcc
-from dash.dependencies import Output, Input, State
+from dash.dependencies import Output, Input
 import dash_bootstrap_components as dbc
 from dash_bootstrap_templates import load_figure_template
 
@@ -38,7 +38,7 @@ for airp in all_airp:
 
 
 app.layout = dbc.Container([
-    dcc.Interval(id = 'refresh', interval = 600*1000),
+    dcc.Interval(id = 'refresh', interval = 300*1000),
     dbc.Col(
     html.Div(id='wx', children = [
         html.Div([
@@ -216,8 +216,8 @@ html.Div([
               Output('airport','children'),
               Output('condition','children'),
               Input('airp','value'),
-              State('hours','value'),
-              State('metric','value'),
+              Input('hours','value'),
+              Input('metric','value'),
              Input('refresh','n_intervals'))
 
 def view_stats(dep,hours, metric,n):
@@ -246,7 +246,7 @@ def view_stats(dep,hours, metric,n):
         airport_type = 'destination'
         heading = f'Scheduled Destinations (Next {hours}H)'        
 
-        if metric == 'arrivals':
+        if metric == 'Arrivals':
             airport_type = 'origin'
             heading = f'Scheduled Arrivals (Next {hours}H)'
             
@@ -302,8 +302,7 @@ def view_stats(dep,hours, metric,n):
                             'No Data':'gray'
                        }))
         
-
-        carrier = []
+        dep_arr_time = []
         lat = []
         lon = []
         name = []
@@ -316,40 +315,46 @@ def view_stats(dep,hours, metric,n):
 
             all_ac = fr_api.get_airport_details(dep.upper().strip(), 
                                                 page = page)['airport']['pluginData']['schedule'][metric]['data']
+            
 
             for ac in all_ac:
-                if ac['flight']['airline'] and ac['flight']['time'] and ac['flight']['airport']:
+                if ac['flight']['airline'] and ac['flight']['time']:
                     if ac['flight']['time']['scheduled']['departure'] - int(time())>0 and ac['flight']['time']['scheduled']['departure'] - int(time())<=hours*3600:
-                        scheduled_ac.append(ac)   
+                        scheduled_ac.append(ac) 
             
             for flight in scheduled_ac:
-                carrier.append(flight['flight']['airline']['name'])
-                lat.append(flight['flight']['airport'][airport_type]['position']['latitude'])
-                lon.append(flight['flight']['airport'][airport_type]['position']['longitude'])
-                name.append(flight['flight']['airport'][airport_type]['code']['iata'])
+                if flight['flight']['aircraft']:
+                    lat.append(flight['flight']['airport'][airport_type]['position']['latitude'])
+                    lon.append(flight['flight']['airport'][airport_type]['position']['longitude'])
+                    name.append(flight['flight']['airport'][airport_type]['code']['iata'])
+                    if metric == 'departures':
+                        dep_arr_time.append(datetime.strptime(datetime.fromtimestamp(flight['flight']['time']['scheduled']['departure']).strftime('%Y-%m-%d %H'),'%Y-%m-%d %H'))
+                    else:
+                        dep_arr_time.append(datetime.strptime(datetime.fromtimestamp(flight['flight']['time']['scheduled']['arrival']).strftime('%Y-%m-%d %H'),'%Y-%m-%d %H'))
 
 
-        market = pd.DataFrame(list(zip(carrier,lat,lon,name)),
-                              columns=['Airline','Lat','Lon','Airport'])
+                else:
+                    ac_type.append('N/A')
+
+        market = pd.DataFrame(list(zip(dep_arr_time,lat,lon,name)),
+                              columns=['Time','Lat','Lon','Airport'])
+        
                 
-        market['Count'] = 1
+        market['Flights'] = 1
         top_10_lst = []
         top_10 = dict(market['Airport'].value_counts().head(10))
         for k,v in top_10.items():
             top_10_lst.append(k)
 
-        figure2 = dcc.Graph(figure = px.bar(market[market['Airport'].isin(top_10_lst)].groupby(['Airport','Airline']).sum().reset_index(),                       
-                         x='Airport', 
-                         y='Count',
-                        color = 'Airline',
-                        title = f'Top 10 Airports (Next {hours}H)',
-                        color_discrete_sequence = px.colors.qualitative.T10).update_xaxes(tickangle = -50))
-
-
+        figure2 = dcc.Graph(figure = px.line(market[market['Airport'].isin(top_10_lst)].groupby(['Time']).sum().reset_index().sort_values(by = 'Time'),                       
+                         x='Time', 
+                         y='Flights',
+                        markers=True,
+                        title = f'{metric.title()} per Hour (Next {hours}H)').update_xaxes(tickangle = -50).update_yaxes(rangemode='tozero').update_traces(line_color='#5b92e5', line_width=5))
         figure3 = dcc.Graph(figure = px.scatter_geo(market.groupby(['Airport','Lat','Lon']).count().reset_index(), 
                                     lat = 'Lat',
                                     lon = 'Lon',
-                                    color = 'Count',
+                                    color = 'Flights',
                                     hover_name = 'Airport',
                                     color_continuous_scale = px.colors.sequential.Sunset,
                                     title = heading
