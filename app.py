@@ -343,12 +343,8 @@ def view_stats(dep,hours, metric,n):
         
                 
         market['Flights'] = 1
-        top_10_lst = []
-        top_10 = dict(market['Airport'].value_counts().head(10))
-        for k,v in top_10.items():
-            top_10_lst.append(k)
 
-        figure2 = dcc.Graph(figure = px.line(market[market['Airport'].isin(top_10_lst)].groupby(['Time']).sum().reset_index().sort_values(by = 'Time'),                       
+        figure2 = dcc.Graph(figure = px.line(market.groupby(['Time']).sum().reset_index().sort_values(by = 'Time'),                       
                          x='Time', 
                          y='Flights',
                         markers=True,
