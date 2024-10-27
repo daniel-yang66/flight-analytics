@@ -4,7 +4,7 @@ from datetime import datetime
 import pytz
 from time import time
 from dash import Dash, html, dcc
-from dash.dependencies import Output, Input
+from dash.dependencies import Output, Input, State
 import dash_bootstrap_components as dbc
 from dash_bootstrap_templates import load_figure_template
 
@@ -307,7 +307,9 @@ def view_stats(dep,hours, metric,n):
         lon = []
         name = []
         
-
+        tz = airport['airport']['pluginData']['details']['timezone']['name']
+        aero_tz = pytz.timezone(tz) 
+        
         total_pages = airport['airport']['pluginData']['schedule'][metric]['page']['total']
 
         for page in range(0,total_pages+1):
@@ -327,14 +329,12 @@ def view_stats(dep,hours, metric,n):
                     lat.append(flight['flight']['airport'][airport_type]['position']['latitude'])
                     lon.append(flight['flight']['airport'][airport_type]['position']['longitude'])
                     name.append(flight['flight']['airport'][airport_type]['code']['iata'])
+                    
                     if metric == 'departures':
-                        dep_arr_time.append(datetime.strptime(datetime.fromtimestamp(flight['flight']['time']['scheduled']['departure']).strftime('%Y-%m-%d %H'),'%Y-%m-%d %H'))
+                        dep_arr_time.append(datetime.strptime(datetime.fromtimestamp(flight['flight']['time']['scheduled']['departure']).astimezone(aero_tz).strftime('%Y-%m-%d %H'),'%Y-%m-%d %H'))
                     else:
-                        dep_arr_time.append(datetime.strptime(datetime.fromtimestamp(flight['flight']['time']['scheduled']['arrival']).strftime('%Y-%m-%d %H'),'%Y-%m-%d %H'))
+                        dep_arr_time.append(datetime.strptime(datetime.fromtimestamp(flight['flight']['time']['scheduled']['arrival']).astimezone(aero_tz).strftime('%Y-%m-%d %H'),'%Y-%m-%d %H'))
 
-
-                else:
-                    ac_type.append('N/A')
 
         market = pd.DataFrame(list(zip(dep_arr_time,lat,lon,name)),
                               columns=['Time','Lat','Lon','Airport'])
@@ -361,7 +361,6 @@ def view_stats(dep,hours, metric,n):
                                    ).update_coloraxes(showscale=False).update_layout(mapbox_style = 'dark',
                                                                                     mapbox_accesstoken = 'pk.eyJ1IjoiZGFuaWVseWFuZzc4NyIsImEiOiJjbHB6d3E1Y2IxNnF2MmpwcHRnbnVxZm94In0.D9wJEwgIDAr-V2EN5zDTJw'))
 
-        tz = airport['airport']['pluginData']['details']['timezone']['name']
         tz_abb = airport['airport']['pluginData']['details']['timezone']['abbr']
         aero_tz = pytz.timezone(tz) 
         aerodrome_time = datetime.now(aero_tz)
@@ -454,6 +453,10 @@ def view_stats2(company, n):
 
 if __name__ == '__main__':
     app.run_server(debug=False)
+
+
+
+
 
 
 
