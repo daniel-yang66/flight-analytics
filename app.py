@@ -244,11 +244,11 @@ def view_stats(dep,hours, metric,n):
             flights['Count'] = '0'
 
         airport_type = 'destination'
-        heading = f'Scheduled Destinations (Next {hours}H)'        
+        heading = f'Scheduled Destinations'        
 
         if metric == 'arrivals':
             airport_type = 'origin'
-            heading = f'Scheduled Arrivals (Next {hours}H)'
+            heading = f'Scheduled Arrivals'
             
 
         temp_data = airport['airport']['pluginData']['weather']['temp']['celsius']
@@ -352,7 +352,7 @@ def view_stats(dep,hours, metric,n):
                          x='Time', 
                          y='Flights',
                         markers=True,
-                        title = f'{metric.title()}/Hour (Next {hours}H)').update_xaxes(tickangle = -50).update_yaxes(rangemode='tozero').update_traces(line_color='#5b92e5', line_width=5,marker_size=12, marker_color='lightgreen'))
+                        title = f'{metric.title()} per Hour').update_xaxes(tickangle = -50).update_yaxes(rangemode='tozero').update_traces(line_color='#5b92e5', line_width=5,marker_size=12, marker_color='lightgreen'))
         figure3 = dcc.Graph(figure = px.scatter_geo(market.groupby(['Airport','Lat','Lon']).count().reset_index(), 
                                     lat = 'Lat',
                                     lon = 'Lon',
