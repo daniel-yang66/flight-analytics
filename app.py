@@ -4,7 +4,7 @@ from datetime import datetime
 import pytz
 from time import time
 from dash import Dash, html, dcc
-from dash.dependencies import Output, Input
+from dash.dependencies import Output, Input, State
 import dash_bootstrap_components as dbc
 from dash_bootstrap_templates import load_figure_template
 
@@ -104,6 +104,15 @@ app.layout = dbc.Container([
                      )],
                 style = {'width':900}
             ),
+                html.Button('Go', id='button', n_clicks=0, style = {'width':120, 
+                                                                     'height':30, 
+                                                                    'border-radius':15,
+                                                                    'border':'solid 2px white',
+                                                                     'font-size':15,
+                                                                    'font-weight':'bold',
+                                                                     'font-family':'sans-serif',
+                                                                    'background-color':'green',
+                                                                    'color':'white'}),
     
         dcc.Loading(dbc.Row([
         dbc.Col([
@@ -209,18 +218,20 @@ html.Div([
 
 
 @app.callback(
+              Output("button", "n_clicks"),
               Output('time','children'),
               Output('pie','children'),
               Output('bar2','children'),
               Output('map','children'),
               Output('airport','children'),
               Output('condition','children'),
-              Input('airp','value'),
-              Input('hours','value'),
-              Input('metric','value'),
-             Input('refresh','n_intervals'))
+              State('airp','value'),
+              State('hours','value'),
+              State('metric','value'),
+              Input('button','n_clicks'),
+              Input('refresh','n_intervals'))
 
-def view_stats(dep,hours, metric,n):
+def view_stats(dep,hours, metric,n_clicks,n):
     
     try:
         
@@ -320,8 +331,11 @@ def view_stats(dep,hours, metric,n):
             
 
             for ac in all_ac:
-                if ac['flight']['airline'] and ac['flight']['time']:
+                if ac['flight']['airline'] and ac['flight']['time'] and metric == 'departures':
                     if ac['flight']['time']['scheduled']['departure'] - int(time())>0 and ac['flight']['time']['scheduled']['departure'] - int(time())<=hours*3600:
+                        scheduled_ac.append(ac) 
+                elif ac['flight']['airline'] and ac['flight']['time'] and metric == 'arrivals':
+                    if ac['flight']['time']['scheduled']['arrival'] - int(time())>0 and ac['flight']['time']['scheduled']['arrival'] - int(time())<=hours*3600:
                         scheduled_ac.append(ac) 
             
             for flight in scheduled_ac:
@@ -381,8 +395,10 @@ def view_stats(dep,hours, metric,n):
         weather_heading = ''
         weather_info = ''
     
+    n_clicks = None
+    
 
-    return local_time, figure, figure2, figure3, weather_heading, weather_info
+    return n_clicks,local_time, figure, figure2, figure3, weather_heading, weather_info
     
     
 @app.callback(
